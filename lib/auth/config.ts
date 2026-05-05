@@ -1,21 +1,12 @@
 import NextAuth, { CredentialsSignin, type NextAuthConfig } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { ObjectId } from "mongodb";
-import { getDb } from "@/lib/db/mongodb";
+import { findUserByEmail } from "@/lib/models/user";
 import { isRole, type Role } from "@/lib/auth/roles";
 
 class InvalidCredentialsError extends CredentialsSignin {
   code = "invalid_credentials";
 }
-
-type DbUser = {
-  _id: ObjectId;
-  email: string;
-  password: string;
-  name?: string;
-  role: Role;
-};
 
 async function authenticate(
   emailRaw: unknown,
@@ -37,8 +28,7 @@ async function authenticate(
     };
   }
 
-  const db = await getDb();
-  const user = await db.collection<DbUser>("users").findOne({ email });
+  const user = await findUserByEmail(email);
   if (!user) return null;
 
   const ok = await bcrypt.compare(password, user.password);

@@ -31,12 +31,14 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { hasAtLeast, type Role } from "@/lib/auth/roles";
 
 type NavItem = {
   title: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+  minRole?: Role;
 };
 
 type NavGroup = {
@@ -65,7 +67,7 @@ const navGroups: NavGroup[] = [
   {
     label: "Team",
     items: [
-      { title: "Members", href: "/dashboard/members", icon: Users },
+      { title: "Members", href: "/dashboard/members", icon: Users, minRole: "admin" },
       { title: "Clients", href: "/dashboard/clients", icon: Building2 },
     ],
   },
@@ -76,11 +78,18 @@ const footerItems: NavItem[] = [
   { title: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
 ];
 
-export function AppSidebar() {
+export function AppSidebar({ role }: { role: Role }) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => !item.minRole || hasAtLeast(role, item.minRole)),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
@@ -104,7 +113,7 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-1 py-2">
-        {navGroups.map((group) => (
+        {visibleGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className="px-2 text-[11px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
               {group.label}

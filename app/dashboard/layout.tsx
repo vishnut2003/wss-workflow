@@ -29,7 +29,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar role={user.role} />
       <SidebarInset className="bg-linear-to-br from-background via-background to-theme-1/4">
         <DashboardHeader user={user} logoutAction={logoutAction} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
