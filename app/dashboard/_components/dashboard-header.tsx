@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, Bell, LogOut, User, Settings } from "lucide-react";
+import Link from "next/link";
+import { Search, Bell, LogOut, Settings } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -15,6 +16,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -84,23 +86,26 @@ export function DashboardHeader({ user, logoutAction }: Props) {
             }
           />
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-foreground">
-                {user.name}
-              </span>
-              <span className="text-xs font-normal text-muted-foreground">
-                {user.email}
-              </span>
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-foreground">
+                  {user.name}
+                </span>
+                <span className="text-xs font-normal text-muted-foreground">
+                  {user.email}
+                </span>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings />
-              Settings
-            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={
+                <Link href="/dashboard/settings">
+                  <Settings />
+                  Settings
+                </Link>
+              }
+            />
+
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
