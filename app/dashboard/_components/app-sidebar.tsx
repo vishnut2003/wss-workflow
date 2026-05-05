@@ -14,6 +14,7 @@ import {
   Bell,
   Settings,
   HelpCircle,
+  Inbox,
   MessageSquarePlus,
 } from "lucide-react";
 
@@ -69,6 +70,17 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Members", href: "/dashboard/members", icon: Users, minRole: "admin" },
       { title: "Clients", href: "/dashboard/clients", icon: Building2 },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      {
+        title: "Feedback",
+        href: "/dashboard/feedback/view",
+        icon: Inbox,
+        minRole: "super_admin",
+      },
     ],
   },
 ];
