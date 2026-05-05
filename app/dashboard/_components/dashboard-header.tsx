@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   InputGroup,
   InputGroupAddon,
@@ -50,6 +51,7 @@ export function DashboardHeader({ user, logoutAction }: Props) {
       </div>
 
       <div className="flex flex-1 items-center justify-end gap-1.5 sm:flex-none">
+        <ThemeToggle />
         <Button
           variant="ghost"
           size="icon-sm"
