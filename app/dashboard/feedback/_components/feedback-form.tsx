@@ -88,7 +88,7 @@ export function FeedbackForm() {
             onValueChange={(v) => setCategory(v as FeedbackCategory)}
             disabled={pending}
           >
-            <SelectTrigger className="h-10 w-full rounded-lg">
+            <SelectTrigger className="h-10! w-full rounded-lg capitalize">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
             <SelectContent>
