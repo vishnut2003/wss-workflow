@@ -50,6 +50,30 @@ export async function findUserByEmail(emailRaw: string): Promise<UserDoc | null>
   return col.findOne({ email });
 }
 
+export async function findUserById(id: string): Promise<UserDoc | null> {
+  if (!ObjectId.isValid(id)) return null;
+  const col = await usersCollection();
+  return col.findOne({ _id: new ObjectId(id) });
+}
+
+export async function deleteUserById(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const col = await usersCollection();
+  const res = await col.deleteOne({ _id: new ObjectId(id) });
+  return res.deletedCount === 1;
+}
+
+export async function updateUserPassword(id: string, password: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const col = await usersCollection();
+  const hashed = await bcrypt.hash(password, 12);
+  const res = await col.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { password: hashed, updatedAt: new Date() } }
+  );
+  return res.matchedCount === 1;
+}
+
 export async function emailExists(email: string): Promise<boolean> {
   const col = await usersCollection();
   const found = await col.findOne(
