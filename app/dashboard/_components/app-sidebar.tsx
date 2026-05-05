@@ -39,6 +39,7 @@ type NavItem = {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   badge?: string;
+  comingSoon?: boolean;
   minRole?: Role;
 };
 
@@ -60,8 +61,8 @@ const navGroups: NavGroup[] = [
   {
     label: "Insights",
     items: [
-      { title: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-      { title: "Activity", href: "/dashboard/activity", icon: Activity },
+      { title: "Reports", href: "#", icon: BarChart3, comingSoon: true },
+      { title: "Activity", href: "#", icon: Activity, comingSoon: true },
       { title: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: "3" },
     ],
   },
@@ -136,7 +137,7 @@ export function AppSidebar({ role }: { role: Role }) {
                   const active = isActive(item.href);
                   const Icon = item.icon;
                   return (
-                    <SidebarMenuItem key={item.href}>
+                    <SidebarMenuItem key={item.title}>
                       {active ? (
                         <span
                           aria-hidden
@@ -145,21 +146,42 @@ export function AppSidebar({ role }: { role: Role }) {
                       ) : null}
                       <SidebarMenuButton
                         isActive={active}
-                        tooltip={item.title}
+                        tooltip={
+                          item.comingSoon ? `${item.title} · Coming soon` : item.title
+                        }
                         className={
                           active
                             ? "bg-linear-to-r from-theme-1/15 to-theme-3/5 font-medium text-foreground ring-1 ring-theme-1/20 hover:bg-linear-to-r hover:from-theme-1/20 hover:to-theme-3/10"
-                            : "text-muted-foreground hover:text-foreground"
+                            : item.comingSoon
+                              ? "cursor-default text-muted-foreground/70 hover:bg-transparent hover:text-muted-foreground/70"
+                              : "text-muted-foreground hover:text-foreground"
                         }
                         render={
-                          <Link href={item.href}>
+                          <Link
+                            href={item.href}
+                            aria-disabled={item.comingSoon || undefined}
+                            tabIndex={item.comingSoon ? -1 : undefined}
+                            onClick={
+                              item.comingSoon
+                                ? (e) => e.preventDefault()
+                                : undefined
+                            }
+                          >
                             <Icon
                               className={
-                                active ? "text-theme-2" : "text-muted-foreground"
+                                active
+                                  ? "text-theme-2"
+                                  : item.comingSoon
+                                    ? "text-muted-foreground/60"
+                                    : "text-muted-foreground"
                               }
                             />
                             <span>{item.title}</span>
-                            {item.badge ? (
+                            {item.comingSoon ? (
+                              <span className="pointer-events-none absolute top-1/2 right-1 inline-flex -translate-y-1/2 items-center rounded-md bg-linear-to-r from-theme-1/15 via-theme-2/10 to-theme-3/15 px-1.5 py-0.5 font-heading text-[9px] font-semibold tracking-wider text-theme-3 uppercase ring-1 ring-theme-1/25 ring-inset group-data-[collapsible=icon]:hidden">
+                                Coming soon
+                              </span>
+                            ) : item.badge ? (
                               <SidebarMenuBadge
                                 className={
                                   active
