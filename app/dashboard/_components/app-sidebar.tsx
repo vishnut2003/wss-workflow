@@ -14,7 +14,7 @@ import {
   Bell,
   Settings,
   HelpCircle,
-  Sparkles,
+  MessageSquarePlus,
 } from "lucide-react";
 
 import {
@@ -207,21 +207,24 @@ export function AppSidebar({ role }: { role: Role }) {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border/60 p-3 group-data-[collapsible=icon]:hidden">
-        <div className="relative overflow-hidden rounded-xl bg-linear-to-br from-theme-1 to-theme-3 p-3 text-white shadow-md shadow-theme-2/20">
+        <Link
+          href="/dashboard/feedback"
+          className="group/feedback relative block overflow-hidden rounded-xl bg-linear-to-br from-theme-1 to-theme-3 p-3 text-white shadow-md shadow-theme-2/20 transition-shadow hover:shadow-lg hover:shadow-theme-2/30"
+        >
           <div
             aria-hidden
             className="absolute -top-6 -right-6 size-20 rounded-full bg-white/20 blur-2xl"
           />
           <div className="relative flex items-start gap-2">
-            <Sparkles className="mt-0.5 size-4 shrink-0" />
+            <MessageSquarePlus className="mt-0.5 size-4 shrink-0" />
             <div className="flex flex-col gap-0.5">
-              <p className="text-xs font-semibold">Upgrade to Pro</p>
+              <p className="text-xs font-semibold">Share feedback</p>
               <p className="text-[11px] leading-snug text-white/85">
-                Unlock automations and advanced analytics.
+                Got an idea? Help shape Workflow.
               </p>
             </div>
           </div>
-        </div>
+        </Link>
       </SidebarFooter>
     </Sidebar>
   );
