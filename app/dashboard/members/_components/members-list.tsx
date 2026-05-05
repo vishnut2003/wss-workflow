@@ -42,6 +42,7 @@ import {
 import { ROLES, type Role } from "@/lib/auth/roles";
 import type { MemberListItem } from "@/lib/models/user";
 
+import { ChangeRoleDialog } from "./change-role-dialog";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
 import { RoleBadge } from "./role-badge";
@@ -156,7 +157,7 @@ export function MembersList({
   const [page, setPage] = useState(1);
 
   const [actionTarget, setActionTarget] = useState<MemberListItem | null>(null);
-  const [dialog, setDialog] = useState<"none" | "delete" | "reset">("none");
+  const [dialog, setDialog] = useState<"none" | "delete" | "reset" | "role">("none");
 
   const totalCounts = useMemo(() => countByRole(members), [members]);
 
@@ -200,6 +201,10 @@ export function MembersList({
   const openReset = (m: MemberListItem) => {
     setActionTarget(m);
     setDialog("reset");
+  };
+  const openRole = (m: MemberListItem) => {
+    setActionTarget(m);
+    setDialog("role");
   };
   const closeDialog = (open: boolean) => {
     if (!open) {
@@ -408,6 +413,10 @@ export function MembersList({
                               }
                             />
                             <DropdownMenuContent align="end" className="min-w-44">
+                              <DropdownMenuItem onClick={() => openRole(m)}>
+                                <UserCog className="size-4" />
+                                Change role
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => openReset(m)}>
                                 <KeyRound className="size-4" />
                                 Reset password
@@ -485,6 +494,16 @@ export function MembersList({
         memberId={actionTarget?.id ?? null}
         memberName={actionTarget?.name || actionTarget?.email.split("@")[0] || ""}
         memberEmail={actionTarget?.email ?? ""}
+      />
+
+      <ChangeRoleDialog
+        open={dialog === "role"}
+        onOpenChange={closeDialog}
+        memberId={actionTarget?.id ?? null}
+        memberName={actionTarget?.name || actionTarget?.email.split("@")[0] || ""}
+        memberEmail={actionTarget?.email ?? ""}
+        currentRole={actionTarget?.role ?? null}
+        actorRole={currentUserRole}
       />
     </>
   );

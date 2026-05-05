@@ -63,6 +63,16 @@ export async function deleteUserById(id: string): Promise<boolean> {
   return res.deletedCount === 1;
 }
 
+export async function updateUserRole(id: string, role: Role): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const col = await usersCollection();
+  const res = await col.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { role, updatedAt: new Date() } }
+  );
+  return res.matchedCount === 1;
+}
+
 export async function updateUserPassword(id: string, password: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await usersCollection();

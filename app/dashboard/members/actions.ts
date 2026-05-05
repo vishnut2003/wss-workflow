@@ -9,6 +9,7 @@ import {
   emailExists,
   findUserById,
   updateUserPassword,
+  updateUserRole,
 } from "@/lib/models/user";
 
 export type AddMemberState = {
@@ -22,6 +23,11 @@ export type DeleteMemberState = {
 };
 
 export type ResetPasswordState = {
+  error?: string;
+  ok?: boolean;
+};
+
+export type UpdateRoleState = {
   error?: string;
   ok?: boolean;
 };
@@ -155,6 +161,56 @@ export async function resetPasswordAction(
     if (!ok) return { error: "Password could not be updated." };
   } catch {
     return { error: "Could not update the password. Please try again." };
+  }
+
+  revalidatePath("/dashboard/members");
+  return { ok: true };
+}
+
+export async function updateMemberRoleAction(
+  _prev: UpdateRoleState | undefined,
+  formData: FormData
+): Promise<UpdateRoleState> {
+  const session = await auth();
+  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+    return { error: "You do not have permission to change roles." };
+  }
+
+  const memberId = String(formData.get("memberId") ?? "").trim();
+  const roleRaw = String(formData.get("role") ?? "");
+  if (!memberId) return { error: "Missing member id." };
+  if (!isRole(roleRaw)) return { error: "Invalid role." };
+  const newRole: Role = roleRaw;
+
+  if (newRole === "super_admin") {
+    return { error: "Super admin cannot be assigned." };
+  }
+
+  if (memberId === session.user.id) {
+    return { error: "You cannot change your own role." };
+  }
+
+  const target = await findUserById(memberId);
+  if (!target) return { error: "Member not found." };
+  const targetRole: Role = isRole(target.role) ? target.role : "member";
+
+  if (!canManage(session.user.role, targetRole)) {
+    return { error: "You do not have permission to change this member's role." };
+  }
+
+  if (ROLE_RANK[newRole] >= ROLE_RANK[session.user.role]) {
+    return { error: "You can only assign roles below your own." };
+  }
+
+  if (newRole === targetRole) {
+    return { error: "Member already has that role." };
+  }
+
+  try {
+    const ok = await updateUserRole(memberId, newRole);
+    if (!ok) return { error: "Role could not be updated." };
+  } catch {
+    return { error: "Could not update the role. Please try again." };
   }
 
   revalidatePath("/dashboard/members");
