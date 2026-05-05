@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { AlertCircle, CheckCircle2, Mail, Save, User as UserIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -20,15 +20,20 @@ type Props = {
 export function AccountForm({ initial }: Props) {
   const [name, setName] = useState(initial.name);
   const [email, setEmail] = useState(initial.email);
+  const [lastInitial, setLastInitial] = useState(initial);
   const [state, action, pending] = useActionState<UpdateProfileState | undefined, FormData>(
     updateProfileAction,
     undefined
   );
 
-  useEffect(() => {
+  if (
+    initial.name !== lastInitial.name ||
+    initial.email !== lastInitial.email
+  ) {
+    setLastInitial(initial);
     setName(initial.name);
     setEmail(initial.email);
-  }, [initial.name, initial.email]);
+  }
 
   const dirty = name.trim() !== initial.name.trim() || email.trim() !== initial.email.trim();
 

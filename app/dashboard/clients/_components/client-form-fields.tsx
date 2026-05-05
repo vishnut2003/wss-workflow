@@ -399,13 +399,17 @@ function PhoneCountrySelect({
 
   useEffect(() => {
     if (!open) return;
-    setQuery("");
     const id = window.setTimeout(() => inputRef.current?.focus(), 0);
     return () => window.clearTimeout(id);
   }, [open]);
 
+  const handleOpenChange = (next: boolean) => {
+    if (next) setQuery("");
+    setOpen(next);
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         render={
           <button

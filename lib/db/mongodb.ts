@@ -8,7 +8,6 @@ if (!uri) throw new Error("MONGODB_URI is not set");
 if (!dbName) throw new Error("DB_NAME is not set");
 
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 

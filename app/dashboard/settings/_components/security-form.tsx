@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import {
   AlertCircle,
   CheckCircle2,
@@ -29,17 +29,17 @@ export function SecurityForm() {
   const [confirm, setConfirm] = useState("");
 
   const [state, action, pending] = useActionState<UpdatePasswordState | undefined, FormData>(
-    updatePasswordAction,
+    async (prev, formData) => {
+      const result = await updatePasswordAction(prev, formData);
+      if (result?.ok) {
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirm("");
+      }
+      return result;
+    },
     undefined
   );
-
-  useEffect(() => {
-    if (state?.ok) {
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirm("");
-    }
-  }, [state]);
 
   const ready =
     currentPassword.length > 0 &&

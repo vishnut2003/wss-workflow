@@ -135,6 +135,26 @@ export async function listMembers(): Promise<MemberListItem[]> {
   }));
 }
 
+export async function listManagers(): Promise<MemberListItem[]> {
+  const col = await usersCollection();
+  const managerRoles: Role[] = ["manager", "admin"];
+  const docs = await col
+    .find(
+      { role: { $in: managerRoles } },
+      { projection: { password: 0 } }
+    )
+    .sort({ name: 1 })
+    .toArray();
+
+  return docs.map((d: WithId<Omit<UserDoc, "password">>) => ({
+    id: d._id.toString(),
+    email: d.email,
+    name: d.name ?? "",
+    role: isRole(d.role) ? d.role : "member",
+    createdAt: (d.createdAt instanceof Date ? d.createdAt : new Date()).toISOString(),
+  }));
+}
+
 export async function createUser(input: CreateUserInput): Promise<{ id: string }> {
   const col = await usersCollection();
   const email = input.email.trim().toLowerCase();

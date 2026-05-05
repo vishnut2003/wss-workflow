@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { Monitor, Moon, Palette, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
+
+const subscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 const THEME_OPTIONS = [
   { value: "light", label: "Light", icon: Sun },
@@ -55,11 +59,7 @@ function PreferenceRow({
 
 function ThemeSelector() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const current: ThemeOption = (mounted && (theme as ThemeOption)) || "system";
 

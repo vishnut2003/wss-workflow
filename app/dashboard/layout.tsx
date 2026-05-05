@@ -1,5 +1,8 @@
 import { requireSession, logoutAction } from "@/lib/auth/session";
+import { hasAtLeast } from "@/lib/auth/roles";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { listAllProjects, listProjectsForUser } from "@/lib/models/project";
+import type { SidebarProject } from "@/lib/projects/types";
 import { AppSidebar } from "./_components/app-sidebar";
 import { DashboardHeader } from "./_components/dashboard-header";
 
@@ -27,9 +30,20 @@ export default async function DashboardLayout({
     initials: getInitials(displayName),
   };
 
+  const projects = hasAtLeast(user.role, "admin")
+    ? await listAllProjects()
+    : await listProjectsForUser(session.user.id);
+
+  const sidebarProjects: SidebarProject[] = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    clientLabel: p.client?.company || p.client?.name || "",
+  }));
+
   return (
     <SidebarProvider>
-      <AppSidebar role={user.role} />
+      <AppSidebar role={user.role} projects={sidebarProjects} />
       <SidebarInset className="bg-linear-to-br from-background via-background to-theme-1/4">
         <DashboardHeader user={user} logoutAction={logoutAction} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -173,15 +173,17 @@ export function MembersList({
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
-  useEffect(() => {
+  const updateQuery = (value: string) => {
+    setQuery(value);
     setPage(1);
-  }, [query, roleFilter]);
+  };
+  const updateRoleFilter = (value: RoleFilter) => {
+    setRoleFilter(value);
+    setPage(1);
+  };
 
-  useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
-
-  const startIndex = (page - 1) * PAGE_SIZE;
+  const effectivePage = Math.min(Math.max(1, page), totalPages);
+  const startIndex = (effectivePage - 1) * PAGE_SIZE;
   const pageItems = filtered.slice(startIndex, startIndex + PAGE_SIZE);
   const showingFrom = filtered.length === 0 ? 0 : startIndex + 1;
   const showingTo = Math.min(startIndex + PAGE_SIZE, filtered.length);
@@ -241,14 +243,14 @@ export function MembersList({
               <InputGroupInput
                 placeholder="Search by name or email"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => updateQuery(e.target.value)}
                 aria-label="Search members"
               />
               {query && (
                 <InputGroupAddon align="inline-end">
                   <button
                     type="button"
-                    onClick={() => setQuery("")}
+                    onClick={() => updateQuery("")}
                     aria-label="Clear search"
                     className="rounded-sm text-muted-foreground transition-colors hover:text-foreground"
                   >
@@ -262,7 +264,7 @@ export function MembersList({
           <div className="flex flex-wrap items-center gap-1.5">
             <FilterChip
               active={roleFilter === "all"}
-              onClick={() => setRoleFilter("all")}
+              onClick={() => updateRoleFilter("all")}
               label="All"
               count={members.length}
               activeClass="bg-foreground/10 text-foreground ring-foreground/20"
@@ -274,7 +276,7 @@ export function MembersList({
                   key={role}
                   active={roleFilter === role}
                   onClick={() =>
-                    setRoleFilter((prev) => (prev === role ? "all" : role))
+                    updateRoleFilter(roleFilter === role ? "all" : role)
                   }
                   label={ROLE_LABEL[role]}
                   count={totalCounts[role]}
@@ -290,8 +292,8 @@ export function MembersList({
                 size="sm"
                 className="ml-auto h-6 px-2 text-xs"
                 onClick={() => {
-                  setQuery("");
-                  setRoleFilter("all");
+                  updateQuery("");
+                  updateRoleFilter("all");
                 }}
               >
                 Clear
@@ -318,8 +320,8 @@ export function MembersList({
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setQuery("");
-                  setRoleFilter("all");
+                  updateQuery("");
+                  updateRoleFilter("all");
                 }}
               >
                 Clear filters
@@ -456,19 +458,25 @@ export function MembersList({
                     variant="outline"
                     size="sm"
                     className="h-7 gap-1 px-2"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
+                    onClick={() => setPage(Math.max(1, effectivePage - 1))}
+                    disabled={effectivePage === 1}
                   >
                     <ChevronLeft className="size-3.5" />
                     Prev
                   </Button>
-                  <PageNumbers page={page} totalPages={totalPages} setPage={setPage} />
+                  <PageNumbers
+                    page={effectivePage}
+                    totalPages={totalPages}
+                    setPage={setPage}
+                  />
                   <Button
                     variant="outline"
                     size="sm"
                     className="h-7 gap-1 px-2"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
+                    onClick={() =>
+                      setPage(Math.min(totalPages, effectivePage + 1))
+                    }
+                    disabled={effectivePage === totalPages}
                   >
                     Next
                     <ChevronRight className="size-3.5" />

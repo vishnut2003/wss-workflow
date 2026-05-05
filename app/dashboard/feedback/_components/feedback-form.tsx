@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import {
   AlertCircle,
   Bug,
@@ -57,15 +57,15 @@ export function FeedbackForm() {
   const [state, action, pending] = useActionState<
     SubmitFeedbackState | undefined,
     FormData
-  >(submitFeedbackAction, undefined);
-
-  useEffect(() => {
-    if (state?.ok) {
+  >(async (prev, formData) => {
+    const result = await submitFeedbackAction(prev, formData);
+    if (result?.ok) {
       setSubject("");
       setMessage("");
       setCategory("general");
     }
-  }, [state]);
+    return result;
+  }, undefined);
 
   const subjectRemaining = SUBJECT_MAX - subject.length;
   const messageRemaining = MESSAGE_MAX - message.length;

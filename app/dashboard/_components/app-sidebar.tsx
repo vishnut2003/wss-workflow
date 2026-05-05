@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -16,6 +17,13 @@ import {
   HelpCircle,
   Inbox,
   MessageSquarePlus,
+  ArrowLeft,
+  ChevronsUpDown,
+  Check,
+  Search,
+  FileText,
+  ListChecks,
+  ClipboardList,
 } from "lucide-react";
 
 import {
@@ -32,7 +40,13 @@ import {
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { hasAtLeast, type Role } from "@/lib/auth/roles";
+import type { SidebarProject } from "@/lib/projects/types";
 
 type NavItem = {
   title: string;
@@ -48,12 +62,12 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const navGroups: NavGroup[] = [
+const workspaceGroups: NavGroup[] = [
   {
     label: "Workspace",
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Projects", href: "/dashboard/projects", icon: FolderKanban, badge: "12" },
+      { title: "Projects", href: "/dashboard/projects", icon: FolderKanban },
       { title: "Tasks", href: "/dashboard/tasks", icon: ListTodo, badge: "4" },
       { title: "Calendar", href: "/dashboard/calendar", icon: Calendar },
     ],
@@ -86,21 +100,71 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+function buildProjectGroups(projectId: string): NavGroup[] {
+  const base = `/dashboard/projects/${projectId}`;
+  return [
+    {
+      label: "Project",
+      items: [
+        { title: "Overview", href: base, icon: LayoutDashboard },
+        { title: "Tasks", href: `${base}/tasks`, icon: ListChecks, comingSoon: true },
+        { title: "Milestones", href: `${base}/milestones`, icon: ClipboardList, comingSoon: true },
+        { title: "Files", href: `${base}/files`, icon: FileText, comingSoon: true },
+        { title: "Activity", href: `${base}/activity`, icon: Activity, comingSoon: true },
+      ],
+    },
+    {
+      label: "Manage",
+      items: [
+        { title: "Team", href: `${base}/team`, icon: Users, comingSoon: true },
+        { title: "Settings", href: `${base}/settings`, icon: Settings, comingSoon: true },
+      ],
+    },
+  ];
+}
+
 const footerItems: NavItem[] = [
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
   { title: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
 ];
 
-export function AppSidebar({ role }: { role: Role }) {
+const PROJECT_ID_RE = /^\/dashboard\/projects\/([^/]+)/;
+
+export function AppSidebar({
+  role,
+  projects,
+}: {
+  role: Role;
+  projects: SidebarProject[];
+}) {
   const pathname = usePathname();
 
-  const isActive = (href: string) =>
-    href === "/dashboard" ? pathname === href : pathname.startsWith(href);
+  const projectIdMatch = pathname.match(PROJECT_ID_RE);
+  const candidateProjectId = projectIdMatch?.[1];
+  const currentProject = candidateProjectId
+    ? projects.find((p) => p.id === candidateProjectId) ?? null
+    : null;
+  const inProject = currentProject !== null;
+
+  const isActive = (href: string) => {
+    if (href === "/dashboard") return pathname === href;
+    if (inProject && currentProject) {
+      const base = `/dashboard/projects/${currentProject.id}`;
+      if (href === base) return pathname === base;
+    }
+    return pathname.startsWith(href);
+  };
+
+  const navGroups = inProject && currentProject
+    ? buildProjectGroups(currentProject.id)
+    : workspaceGroups;
 
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => !item.minRole || hasAtLeast(role, item.minRole)),
+      items: group.items.filter(
+        (item) => !item.minRole || hasAtLeast(role, item.minRole)
+      ),
     }))
     .filter((group) => group.items.length > 0);
 
@@ -123,9 +187,37 @@ export function AppSidebar({ role }: { role: Role }) {
             </span>
           </div>
         </Link>
+
+        {inProject && currentProject ? (
+          <ProjectSwitcher
+            current={currentProject}
+            projects={projects}
+          />
+        ) : null}
       </SidebarHeader>
 
       <SidebarContent className="gap-0 px-1 py-2">
+        {inProject ? (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="All projects"
+                    className="text-muted-foreground hover:text-foreground"
+                    render={
+                      <Link href="/dashboard/projects">
+                        <ArrowLeft className="text-muted-foreground" />
+                        <span>All projects</span>
+                      </Link>
+                    }
+                  />
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
+
         {visibleGroups.map((group) => (
           <SidebarGroup key={group.label}>
             <SidebarGroupLabel className="px-2 text-[11px] font-semibold tracking-wider text-muted-foreground/70 uppercase">
@@ -261,5 +353,118 @@ export function AppSidebar({ role }: { role: Role }) {
         </Link>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function ProjectSwitcher({
+  current,
+  projects,
+}: {
+  current: SidebarProject;
+  projects: SidebarProject[];
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return projects;
+    return projects.filter((p) =>
+      `${p.name} ${p.clientLabel}`.toLowerCase().includes(q)
+    );
+  }, [projects, query]);
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) setQuery("");
+    setOpen(next);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            aria-label="Switch project"
+            className="flex w-full items-center gap-2 rounded-lg border border-sidebar-border/60 bg-sidebar-accent/40 px-2 py-1.5 text-left text-sm transition-colors outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-ring/50 group-data-[collapsible=icon]:hidden"
+          />
+        }
+      >
+        <FolderKanban className="size-4 shrink-0 text-theme-3 dark:text-theme-1" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="truncate text-xs font-semibold text-foreground">
+            {current.name}
+          </span>
+          {current.clientLabel ? (
+            <span className="truncate text-[10px] text-muted-foreground">
+              {current.clientLabel}
+            </span>
+          ) : null}
+        </span>
+        <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        sideOffset={6}
+        className="flex w-[min(20rem,calc(100vw-2rem))] flex-col gap-0 p-0"
+      >
+        <div className="flex items-center gap-2 border-b border-border/60 px-2.5 py-2">
+          <Search className="size-3.5 shrink-0 text-muted-foreground" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Switch project..."
+            autoFocus
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          />
+        </div>
+        <ul className="flex max-h-72 flex-col overflow-y-auto overscroll-contain p-1">
+          {filtered.length === 0 ? (
+            <li className="flex flex-1 items-center justify-center px-2 py-6 text-center text-sm text-muted-foreground">
+              {projects.length === 0 ? "No projects yet" : "No matches"}
+            </li>
+          ) : (
+            filtered.map((p) => {
+              const isCurrent = p.id === current.id;
+              return (
+                <li key={p.id}>
+                  <Link
+                    href={`/dashboard/projects/${p.id}`}
+                    onClick={() => setOpen(false)}
+                    className={`flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
+                      isCurrent ? "bg-accent/60 text-accent-foreground" : ""
+                    }`}
+                  >
+                    <FolderKanban className="mt-0.5 size-3.5 shrink-0 text-theme-3 opacity-80" />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                      <span className="truncate font-medium">{p.name}</span>
+                      {p.clientLabel ? (
+                        <span className="truncate text-[11px] text-muted-foreground">
+                          {p.clientLabel}
+                        </span>
+                      ) : null}
+                    </span>
+                    {isCurrent ? (
+                      <Check className="mt-0.5 size-3.5 shrink-0 text-theme-3" />
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })
+          )}
+        </ul>
+        <div className="border-t border-border/60 p-1">
+          <Link
+            href="/dashboard/projects"
+            onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <ArrowLeft className="size-3.5 shrink-0" />
+            View all projects
+          </Link>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
