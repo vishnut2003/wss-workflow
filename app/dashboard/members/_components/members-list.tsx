@@ -94,7 +94,7 @@ function initialsOf(nameOrEmail: string) {
 
 function formatAbsoluteDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString(undefined, {
+    return new Date(iso).toLocaleString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",

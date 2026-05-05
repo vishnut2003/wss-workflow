@@ -74,6 +74,32 @@ export async function updateUserPassword(id: string, password: string): Promise<
   return res.matchedCount === 1;
 }
 
+export async function verifyUserPassword(id: string, password: string): Promise<boolean> {
+  const user = await findUserById(id);
+  if (!user) return false;
+  return bcrypt.compare(password, user.password);
+}
+
+export type UpdateUserProfileInput = {
+  name?: string;
+  email?: string;
+};
+
+export async function updateUserProfile(
+  id: string,
+  data: UpdateUserProfileInput
+): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const update: Partial<Pick<UserDoc, "name" | "email" | "updatedAt">> = {
+    updatedAt: new Date(),
+  };
+  if (typeof data.name === "string") update.name = data.name.trim();
+  if (typeof data.email === "string") update.email = data.email.trim().toLowerCase();
+  const col = await usersCollection();
+  const res = await col.updateOne({ _id: new ObjectId(id) }, { $set: update });
+  return res.matchedCount === 1;
+}
+
 export async function emailExists(email: string): Promise<boolean> {
   const col = await usersCollection();
   const found = await col.findOne(

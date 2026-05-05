@@ -61,11 +61,18 @@ export const authConfig: NextAuthConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         if (user.id) token.sub = user.id;
         const role = (user as { role?: unknown }).role;
         if (isRole(role)) token.role = role;
+      }
+      if (trigger === "update" && session && typeof session === "object") {
+        const u = (session as { user?: { name?: unknown; email?: unknown } }).user;
+        if (u) {
+          if (typeof u.name === "string") token.name = u.name;
+          if (typeof u.email === "string") token.email = u.email;
+        }
       }
       return token;
     },
@@ -80,4 +87,4 @@ export const authConfig: NextAuthConfig = {
   },
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth(authConfig);
