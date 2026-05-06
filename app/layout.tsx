@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import NextJsTopLoader from "nextjs-toploader"
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -34,6 +35,11 @@ export default function RootLayout({
         >
           {children}
         </ThemeProvider>
+
+        <NextJsTopLoader
+          color="#92c131"
+          showSpinner={false}
+        />
       </body>
     </html>
   );
