@@ -2,6 +2,7 @@ import { requireSession, logoutAction } from "@/lib/auth/session";
 import { hasAtLeast } from "@/lib/auth/roles";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { listAllProjects, listProjectsForUser } from "@/lib/models/project";
+import { findUserById } from "@/lib/models/user";
 import type { SidebarProject } from "@/lib/projects/types";
 import { AppSidebar } from "./_components/app-sidebar";
 import { DashboardHeader } from "./_components/dashboard-header";
@@ -23,11 +24,23 @@ export default async function DashboardLayout({
   const session = await requireSession();
   const displayName = session.user.name ?? session.user.email ?? "User";
 
+  let managerName: string | null = null;
+  if (session.user.role === "member" && session.user.id) {
+    const me = await findUserById(session.user.id);
+    if (me?.managerId) {
+      const manager = await findUserById(me.managerId.toString());
+      if (manager) {
+        managerName = (manager.name ?? "").trim() || manager.email;
+      }
+    }
+  }
+
   const user = {
     name: displayName,
     email: session.user.email ?? "",
     role: session.user.role ?? "member",
     initials: getInitials(displayName),
+    managerName,
   };
 
   const projects = hasAtLeast(user.role, "admin")

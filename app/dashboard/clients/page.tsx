@@ -5,9 +5,9 @@ import { AddClientDialog } from "./_components/add-client-dialog";
 import { ClientsList } from "./_components/clients-list";
 
 export default async function ClientsPage() {
-  const session = await requireRole("member");
+  const session = await requireRole("admin");
   const clients = await listClients();
-  const canManage = hasAtLeast(session.user.role, "manager");
+  const canManage = hasAtLeast(session.user.role, "admin");
 
   return (
     <div className="flex flex-col gap-6">

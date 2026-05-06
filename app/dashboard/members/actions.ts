@@ -8,6 +8,8 @@ import {
   deleteUserById,
   emailExists,
   findUserById,
+  isManagerId,
+  setMemberManager,
   updateUserPassword,
   updateUserRole,
 } from "@/lib/models/user";
@@ -28,6 +30,11 @@ export type ResetPasswordState = {
 };
 
 export type UpdateRoleState = {
+  error?: string;
+  ok?: boolean;
+};
+
+export type AssignManagerState = {
   error?: string;
   ok?: boolean;
 };
@@ -59,6 +66,7 @@ export async function addMemberAction(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
   const roleRaw = String(formData.get("role") ?? "");
+  const managerIdRaw = String(formData.get("managerId") ?? "").trim();
 
   if (!name) return { error: "Name is required." };
   if (!email || !EMAIL_RE.test(email)) return { error: "A valid email is required." };
@@ -72,6 +80,17 @@ export async function addMemberAction(
     return { error: "Only a super admin can assign that role." };
   }
 
+  let managerId: string | undefined;
+  if (managerIdRaw) {
+    if (role !== "member") {
+      return { error: "Only team members can be assigned to a manager." };
+    }
+    if (!(await isManagerId(managerIdRaw))) {
+      return { error: "Selected manager is invalid." };
+    }
+    managerId = managerIdRaw;
+  }
+
   if (await emailExists(email)) {
     return { error: "A user with that email already exists." };
   }
@@ -82,6 +101,7 @@ export async function addMemberAction(
       email,
       password,
       role,
+      managerId,
       createdBy: session.user.id,
     });
   } catch {
@@ -89,6 +109,49 @@ export async function addMemberAction(
   }
 
   revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard/team");
+  return { ok: true };
+}
+
+export async function assignManagerAction(
+  _prev: AssignManagerState | undefined,
+  formData: FormData
+): Promise<AssignManagerState> {
+  const session = await auth();
+  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+    return { error: "You do not have permission to change a member's manager." };
+  }
+
+  const memberId = String(formData.get("memberId") ?? "").trim();
+  const managerIdRaw = String(formData.get("managerId") ?? "").trim();
+  if (!memberId) return { error: "Missing member id." };
+
+  const target = await findUserById(memberId);
+  if (!target) return { error: "Member not found." };
+  if (target.role !== "member") {
+    return { error: "Only team members can be assigned to a manager." };
+  }
+
+  let managerId: string | null = null;
+  if (managerIdRaw) {
+    if (managerIdRaw === memberId) {
+      return { error: "A member cannot be their own manager." };
+    }
+    if (!(await isManagerId(managerIdRaw))) {
+      return { error: "Selected manager is invalid." };
+    }
+    managerId = managerIdRaw;
+  }
+
+  try {
+    const ok = await setMemberManager(memberId, managerId);
+    if (!ok) return { error: "Could not update the manager." };
+  } catch {
+    return { error: "Could not update the manager. Please try again." };
+  }
+
+  revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard/team");
   return { ok: true };
 }
 
@@ -124,6 +187,7 @@ export async function deleteMemberAction(
   }
 
   revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard/team");
   return { ok: true };
 }
 
@@ -164,6 +228,7 @@ export async function resetPasswordAction(
   }
 
   revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard/team");
   return { ok: true };
 }
 
@@ -214,5 +279,6 @@ export async function updateMemberRoleAction(
   }
 
   revalidatePath("/dashboard/members");
+  revalidatePath("/dashboard/team");
   return { ok: true };
 }

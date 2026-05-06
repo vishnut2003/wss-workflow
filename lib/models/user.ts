@@ -1,5 +1,5 @@
 import "server-only";
-import { ObjectId, type Collection, type WithId } from "mongodb";
+import { ObjectId, type Collection, type UpdateFilter, type WithId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { getDb } from "@/lib/db/mongodb";
 import { isRole, type Role } from "@/lib/auth/roles";
@@ -10,6 +10,7 @@ export type UserDoc = {
   password: string;
   name?: string;
   role: Role;
+  managerId?: ObjectId;
   createdAt: Date;
   updatedAt: Date;
   createdBy?: string;
@@ -20,6 +21,8 @@ export type MemberListItem = {
   email: string;
   name: string;
   role: Role;
+  managerId: string | null;
+  managerName: string | null;
   createdAt: string;
 };
 
@@ -28,6 +31,7 @@ export type CreateUserInput = {
   password: string;
   name: string;
   role: Role;
+  managerId?: string;
   createdBy?: string;
 };
 
@@ -38,6 +42,7 @@ async function usersCollection(): Promise<Collection<UserDoc>> {
   const col = db.collection<UserDoc>("users");
   if (!indexEnsured) {
     await col.createIndex({ email: 1 }, { unique: true });
+    await col.createIndex({ managerId: 1 });
     indexEnsured = true;
   }
   return col;
@@ -59,17 +64,35 @@ export async function findUserById(id: string): Promise<UserDoc | null> {
 export async function deleteUserById(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await usersCollection();
-  const res = await col.deleteOne({ _id: new ObjectId(id) });
+  const objectId = new ObjectId(id);
+  const res = await col.deleteOne({ _id: objectId });
+  if (res.deletedCount === 1) {
+    await col.updateMany(
+      { managerId: objectId },
+      { $unset: { managerId: "" }, $set: { updatedAt: new Date() } }
+    );
+  }
   return res.deletedCount === 1;
 }
 
 export async function updateUserRole(id: string, role: Role): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await usersCollection();
-  const res = await col.updateOne(
-    { _id: new ObjectId(id) },
-    { $set: { role, updatedAt: new Date() } }
-  );
+  const objectId = new ObjectId(id);
+  const update: UpdateFilter<UserDoc> =
+    role !== "member"
+      ? {
+          $set: { role, updatedAt: new Date() },
+          $unset: { managerId: "" },
+        }
+      : { $set: { role, updatedAt: new Date() } };
+  const res = await col.updateOne({ _id: objectId }, update);
+  if (res.matchedCount === 1 && role === "member") {
+    await col.updateMany(
+      { managerId: objectId },
+      { $unset: { managerId: "" }, $set: { updatedAt: new Date() } }
+    );
+  }
   return res.matchedCount === 1;
 }
 
@@ -119,6 +142,47 @@ export async function emailExists(email: string): Promise<boolean> {
   return found !== null;
 }
 
+type RawMember = WithId<Omit<UserDoc, "password">>;
+
+function toMemberListItem(
+  d: RawMember,
+  managerNameById: Map<string, string>
+): MemberListItem {
+  const managerHex = d.managerId instanceof ObjectId ? d.managerId.toHexString() : null;
+  return {
+    id: d._id.toString(),
+    email: d.email,
+    name: d.name ?? "",
+    role: isRole(d.role) ? d.role : "member",
+    managerId: managerHex,
+    managerName: managerHex ? managerNameById.get(managerHex) ?? null : null,
+    createdAt: (d.createdAt instanceof Date ? d.createdAt : new Date()).toISOString(),
+  };
+}
+
+async function buildManagerNameMap(
+  col: Collection<UserDoc>,
+  docs: RawMember[]
+): Promise<Map<string, string>> {
+  const ids = new Set<string>();
+  for (const d of docs) {
+    if (d.managerId instanceof ObjectId) ids.add(d.managerId.toHexString());
+  }
+  if (ids.size === 0) return new Map();
+  const managers = await col
+    .find(
+      { _id: { $in: Array.from(ids).map((hex) => new ObjectId(hex)) } },
+      { projection: { name: 1, email: 1 } }
+    )
+    .toArray();
+  const map = new Map<string, string>();
+  for (const m of managers) {
+    const label = (m.name ?? "").trim() || m.email;
+    map.set(m._id.toHexString(), label);
+  }
+  return map;
+}
+
 export async function listMembers(): Promise<MemberListItem[]> {
   const col = await usersCollection();
   const docs = await col
@@ -126,13 +190,25 @@ export async function listMembers(): Promise<MemberListItem[]> {
     .sort({ createdAt: -1 })
     .toArray();
 
-  return docs.map((d: WithId<Omit<UserDoc, "password">>) => ({
-    id: d._id.toString(),
-    email: d.email,
-    name: d.name ?? "",
-    role: isRole(d.role) ? d.role : "member",
-    createdAt: (d.createdAt instanceof Date ? d.createdAt : new Date()).toISOString(),
-  }));
+  const managerNameById = await buildManagerNameMap(col, docs);
+  return docs.map((d) => toMemberListItem(d, managerNameById));
+}
+
+export async function listMembersForManager(
+  managerId: string
+): Promise<MemberListItem[]> {
+  if (!ObjectId.isValid(managerId)) return [];
+  const col = await usersCollection();
+  const docs = await col
+    .find(
+      { managerId: new ObjectId(managerId), role: "member" },
+      { projection: { password: 0 } }
+    )
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  const managerNameById = await buildManagerNameMap(col, docs);
+  return docs.map((d) => toMemberListItem(d, managerNameById));
 }
 
 export async function listManagers(): Promise<MemberListItem[]> {
@@ -146,13 +222,32 @@ export async function listManagers(): Promise<MemberListItem[]> {
     .sort({ name: 1 })
     .toArray();
 
-  return docs.map((d: WithId<Omit<UserDoc, "password">>) => ({
-    id: d._id.toString(),
-    email: d.email,
-    name: d.name ?? "",
-    role: isRole(d.role) ? d.role : "member",
-    createdAt: (d.createdAt instanceof Date ? d.createdAt : new Date()).toISOString(),
-  }));
+  const managerNameById = await buildManagerNameMap(col, docs);
+  return docs.map((d) => toMemberListItem(d, managerNameById));
+}
+
+export async function isManagerId(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const col = await usersCollection();
+  const doc = await col.findOne(
+    { _id: new ObjectId(id), role: { $in: ["manager", "admin", "super_admin"] } },
+    { projection: { _id: 1 } }
+  );
+  return doc !== null;
+}
+
+export async function setMemberManager(
+  memberId: string,
+  managerId: string | null
+): Promise<boolean> {
+  if (!ObjectId.isValid(memberId)) return false;
+  const col = await usersCollection();
+  const update: UpdateFilter<UserDoc> =
+    managerId && ObjectId.isValid(managerId)
+      ? { $set: { managerId: new ObjectId(managerId), updatedAt: new Date() } }
+      : { $set: { updatedAt: new Date() }, $unset: { managerId: "" } };
+  const res = await col.updateOne({ _id: new ObjectId(memberId) }, update);
+  return res.matchedCount === 1;
 }
 
 export async function createUser(input: CreateUserInput): Promise<{ id: string }> {
@@ -161,12 +256,18 @@ export async function createUser(input: CreateUserInput): Promise<{ id: string }
   const now = new Date();
   const hashed = await bcrypt.hash(input.password, 12);
 
+  const managerId =
+    input.role === "member" && input.managerId && ObjectId.isValid(input.managerId)
+      ? new ObjectId(input.managerId)
+      : undefined;
+
   const result = await col.insertOne({
     _id: new ObjectId(),
     email,
     password: hashed,
     name: input.name.trim(),
     role: input.role,
+    ...(managerId ? { managerId } : {}),
     createdAt: now,
     updatedAt: now,
     createdBy: input.createdBy,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useImperativeHandle, useState } from "react";
 import {
   AlertCircle,
   Eye,
@@ -9,6 +9,7 @@ import {
   Mail,
   Plus,
   User as UserIcon,
+  UserCog,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,22 +36,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { MemberListItem } from "@/lib/models/user";
 
 import { addMemberAction, type AddMemberState } from "../actions";
 
-export function AddMemberDialog({ canAssignAdmin }: { canAssignAdmin: boolean }) {
+const NO_MANAGER_VALUE = "__none__";
+
+export type AddMemberDialogHandle = {
+  openWith: (opts: { role?: "member" | "manager"; managerId?: string }) => void;
+};
+
+export function AddMemberDialog({
+  canAssignAdmin,
+  managers,
+  ref,
+  showTrigger = true,
+}: {
+  canAssignAdmin: boolean;
+  managers: MemberListItem[];
+  ref?: React.Ref<AddMemberDialogHandle>;
+  showTrigger?: boolean;
+}) {
   const [open, setOpen] = useState(false);
+  const [initialRole, setInitialRole] = useState<"member" | "manager">("member");
+  const [initialManagerId, setInitialManagerId] = useState<string>("");
+
+  useImperativeHandle(ref, () => ({
+    openWith: ({ role, managerId }) => {
+      setInitialRole(role ?? "member");
+      setInitialManagerId(managerId ?? "");
+      setOpen(true);
+    },
+  }));
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          <Button className="h-9 bg-linear-to-br from-theme-1 to-theme-3 text-white shadow-md shadow-theme-2/30 ring-1 ring-white/20 hover:brightness-105">
-            <Plus />
-            Add member
-          </Button>
-        }
-      />
+      {showTrigger ? (
+        <DialogTrigger
+          render={
+            <Button
+              onClick={() => {
+                setInitialRole("member");
+                setInitialManagerId("");
+              }}
+              className="h-9 bg-linear-to-br from-theme-1 to-theme-3 text-white shadow-md shadow-theme-2/30 ring-1 ring-white/20 hover:brightness-105"
+            >
+              <Plus />
+              Add member
+            </Button>
+          }
+        />
+      ) : null}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add a new member</DialogTitle>
@@ -62,6 +98,9 @@ export function AddMemberDialog({ canAssignAdmin }: { canAssignAdmin: boolean })
         {open ? (
           <AddMemberForm
             canAssignAdmin={canAssignAdmin}
+            managers={managers}
+            initialRole={initialRole}
+            initialManagerId={initialManagerId}
             onSuccess={() => setOpen(false)}
           />
         ) : null}
@@ -72,13 +111,22 @@ export function AddMemberDialog({ canAssignAdmin }: { canAssignAdmin: boolean })
 
 function AddMemberForm({
   canAssignAdmin,
+  managers,
+  initialRole,
+  initialManagerId,
   onSuccess,
 }: {
   canAssignAdmin: boolean;
+  managers: MemberListItem[];
+  initialRole: "member" | "manager";
+  initialManagerId: string;
   onSuccess: () => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<string>("member");
+  const [role, setRole] = useState<string>(initialRole);
+  const [managerId, setManagerId] = useState<string>(
+    initialManagerId || NO_MANAGER_VALUE
+  );
   const [state, action, pending] = useActionState<AddMemberState | undefined, FormData>(
     addMemberAction,
     undefined
@@ -91,6 +139,11 @@ function AddMemberForm({
   return (
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="role" value={role} />
+      <input
+        type="hidden"
+        name="managerId"
+        value={role === "member" && managerId !== NO_MANAGER_VALUE ? managerId : ""}
+      />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="member-name" className="text-xs font-medium text-muted-foreground">
@@ -190,6 +243,38 @@ function AddMemberForm({
           </p>
         ) : null}
       </div>
+
+      {role === "member" ? (
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">
+            Reports to
+          </Label>
+          <Select
+            value={managerId}
+            onValueChange={(v) => setManagerId(String(v))}
+            disabled={pending}
+          >
+            <SelectTrigger className="h-10 w-full rounded-lg">
+              <SelectValue placeholder="No manager" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_MANAGER_VALUE}>
+                <UserCog className="size-3.5 text-muted-foreground" />
+                No manager
+              </SelectItem>
+              {managers.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  <UserCog className="size-3.5 text-muted-foreground" />
+                  {m.name?.trim() || m.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">
+            Optional — assign this team member to a manager.
+          </p>
+        </div>
+      ) : null}
 
       {state?.error ? (
         <div

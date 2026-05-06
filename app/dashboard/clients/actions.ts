@@ -97,7 +97,7 @@ export async function addClientAction(
   formData: FormData
 ): Promise<ClientFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "manager")) {
+  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
     return { error: "You do not have permission to add clients." };
   }
 
@@ -119,7 +119,7 @@ export async function updateClientAction(
   formData: FormData
 ): Promise<ClientFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "manager")) {
+  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
     return { error: "You do not have permission to update clients." };
   }
 

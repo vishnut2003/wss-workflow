@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Bell, LogOut, Settings } from "lucide-react";
+import { Search, Bell, LogOut, Settings, UserCog } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -29,6 +29,7 @@ type Props = {
     email: string;
     role: string;
     initials: string;
+    managerName: string | null;
   };
   logoutAction: () => Promise<void>;
 };
@@ -96,6 +97,22 @@ export function DashboardHeader({ user, logoutAction }: Props) {
                 </span>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
+            {user.managerName ? (
+              <>
+                <DropdownMenuSeparator />
+                <div className="flex items-center gap-2 px-2 py-1.5 text-xs">
+                  <UserCog className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
+                  <span className="flex min-w-0 flex-col leading-tight">
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Reports to
+                    </span>
+                    <span className="truncate font-medium text-foreground">
+                      {user.managerName}
+                    </span>
+                  </span>
+                </div>
+              </>
+            ) : null}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               render={

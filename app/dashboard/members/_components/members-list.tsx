@@ -13,6 +13,7 @@ import {
   Trash2,
   User as UserIcon,
   UserCog,
+  UserPlus,
   Users,
   X,
 } from "lucide-react";
@@ -42,6 +43,7 @@ import {
 import { ROLES, type Role } from "@/lib/auth/roles";
 import type { MemberListItem } from "@/lib/models/user";
 
+import { AssignManagerDialog } from "./assign-manager-dialog";
 import { ChangeRoleDialog } from "./change-role-dialog";
 import { DeleteMemberDialog } from "./delete-member-dialog";
 import { ResetPasswordDialog } from "./reset-password-dialog";
@@ -145,31 +147,39 @@ function countByRole(members: MemberListItem[]): Record<Role, number> {
 
 export function MembersList({
   members,
+  managers,
   currentUserId,
   currentUserRole,
+  onAddTeamMember,
 }: {
   members: MemberListItem[];
+  managers: MemberListItem[];
   currentUserId?: string;
   currentUserRole: Role;
+  onAddTeamMember?: (managerId: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [page, setPage] = useState(1);
+  const [teamOf, setTeamOf] = useState<MemberListItem | null>(null);
 
   const [actionTarget, setActionTarget] = useState<MemberListItem | null>(null);
-  const [dialog, setDialog] = useState<"none" | "delete" | "reset" | "role">("none");
+  const [dialog, setDialog] = useState<
+    "none" | "delete" | "reset" | "role" | "manager"
+  >("none");
 
   const totalCounts = useMemo(() => countByRole(members), [members]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return members.filter((m) => {
+      if (teamOf && (m.role !== "member" || m.managerId !== teamOf.id)) return false;
       if (roleFilter !== "all" && m.role !== roleFilter) return false;
       if (!q) return true;
-      const haystack = `${m.name} ${m.email}`.toLowerCase();
+      const haystack = `${m.name} ${m.email} ${m.managerName ?? ""}`.toLowerCase();
       return haystack.includes(q);
     });
-  }, [members, query, roleFilter]);
+  }, [members, query, roleFilter, teamOf]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
 
@@ -188,7 +198,8 @@ export function MembersList({
   const showingFrom = filtered.length === 0 ? 0 : startIndex + 1;
   const showingTo = Math.min(startIndex + PAGE_SIZE, filtered.length);
 
-  const isFiltering = query.trim().length > 0 || roleFilter !== "all";
+  const isFiltering =
+    query.trim().length > 0 || roleFilter !== "all" || teamOf !== null;
 
   const canManage = (target: MemberListItem): boolean => {
     if (!currentUserId) return false;
@@ -208,11 +219,26 @@ export function MembersList({
     setActionTarget(m);
     setDialog("role");
   };
+  const openManager = (m: MemberListItem) => {
+    setActionTarget(m);
+    setDialog("manager");
+  };
   const closeDialog = (open: boolean) => {
     if (!open) {
       setDialog("none");
       window.setTimeout(() => setActionTarget(null), 150);
     }
+  };
+
+  const viewTeam = (m: MemberListItem) => {
+    setTeamOf(m);
+    setRoleFilter("all");
+    setQuery("");
+    setPage(1);
+  };
+  const clearTeamFilter = () => {
+    setTeamOf(null);
+    setPage(1);
   };
 
   return (
@@ -294,12 +320,35 @@ export function MembersList({
                 onClick={() => {
                   updateQuery("");
                   updateRoleFilter("all");
+                  setTeamOf(null);
                 }}
               >
                 Clear
               </Button>
             )}
           </div>
+
+          {teamOf ? (
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-violet-500/25 bg-violet-500/5 px-3 py-2 text-xs">
+              <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300">
+                <UserCog className="size-3.5" />
+                <span>
+                  Viewing team members reporting to{" "}
+                  <span className="font-semibold">
+                    {teamOf.name?.trim() || teamOf.email.split("@")[0]}
+                  </span>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={clearTeamFilter}
+                className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-violet-700 transition-colors hover:bg-violet-500/10 dark:text-violet-300"
+              >
+                <X className="size-3" />
+                Clear
+              </button>
+            </div>
+          ) : null}
         </div>
 
         {members.length === 0 ? (
@@ -322,6 +371,7 @@ export function MembersList({
                 onClick={() => {
                   updateQuery("");
                   updateRoleFilter("all");
+                  setTeamOf(null);
                 }}
               >
                 Clear filters
@@ -338,6 +388,9 @@ export function MembersList({
                   </TableHead>
                   <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:table-cell">
                     Role
+                  </TableHead>
+                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-muted-foreground lg:table-cell">
+                    Manager
                   </TableHead>
                   <TableHead className="hidden text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground md:table-cell">
                     Added
@@ -393,6 +446,22 @@ export function MembersList({
                       <TableCell className="hidden sm:table-cell">
                         <RoleBadge role={m.role} />
                       </TableCell>
+                      <TableCell className="hidden text-xs text-muted-foreground lg:table-cell">
+                        {m.role === "member" ? (
+                          m.managerName ? (
+                            <span className="inline-flex items-center gap-1">
+                              <UserCog className="size-3 opacity-60" />
+                              <span className="truncate">{m.managerName}</span>
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/60">
+                              Unassigned
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </TableCell>
                       <TableCell
                         className="hidden text-right text-xs text-muted-foreground md:table-cell"
                         title={formatAbsoluteDate(m.createdAt)}
@@ -415,6 +484,30 @@ export function MembersList({
                               }
                             />
                             <DropdownMenuContent align="end" className="min-w-44">
+                              {m.role === "manager" && onAddTeamMember ? (
+                                <>
+                                  <DropdownMenuItem
+                                    onClick={() => onAddTeamMember(m.id)}
+                                  >
+                                    <UserPlus className="size-4" />
+                                    Add team member
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => viewTeam(m)}>
+                                    <Users className="size-4" />
+                                    View team
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              ) : null}
+                              {m.role === "member" ? (
+                                <>
+                                  <DropdownMenuItem onClick={() => openManager(m)}>
+                                    <UserCog className="size-4" />
+                                    {m.managerId ? "Change manager" : "Assign manager"}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              ) : null}
                               <DropdownMenuItem onClick={() => openRole(m)}>
                                 <UserCog className="size-4" />
                                 Change role
@@ -512,6 +605,16 @@ export function MembersList({
         memberEmail={actionTarget?.email ?? ""}
         currentRole={actionTarget?.role ?? null}
         actorRole={currentUserRole}
+      />
+
+      <AssignManagerDialog
+        open={dialog === "manager"}
+        onOpenChange={closeDialog}
+        memberId={actionTarget?.id ?? null}
+        memberName={actionTarget?.name || actionTarget?.email.split("@")[0] || ""}
+        memberEmail={actionTarget?.email ?? ""}
+        currentManagerId={actionTarget?.managerId ?? null}
+        managers={managers}
       />
     </>
   );

@@ -9,6 +9,7 @@ import {
   ListTodo,
   Calendar,
   Users,
+  UserCog,
   Building2,
   BarChart3,
   Activity,
@@ -84,7 +85,8 @@ const workspaceGroups: NavGroup[] = [
     label: "Team",
     items: [
       { title: "Members", href: "/dashboard/members", icon: Users, minRole: "admin" },
-      { title: "Clients", href: "/dashboard/clients", icon: Building2 },
+      { title: "My Team", href: "/dashboard/team", icon: UserCog, minRole: "manager" },
+      { title: "Clients", href: "/dashboard/clients", icon: Building2, minRole: "admin" },
     ],
   },
   {
