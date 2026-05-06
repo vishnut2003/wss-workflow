@@ -22,7 +22,7 @@ import {
   ChevronsUpDown,
   Check,
   Search,
-  FileText,
+  FolderArchive,
   ListChecks,
   ClipboardList,
 } from "lucide-react";
@@ -112,7 +112,7 @@ function buildProjectGroups(projectId: string): NavGroup[] {
         { title: "Overview", href: base, icon: LayoutDashboard },
         { title: "Tasks", href: `${base}/tasks`, icon: ListChecks, comingSoon: true },
         { title: "Milestones", href: `${base}/milestones`, icon: ClipboardList, comingSoon: true },
-        { title: "Files", href: `${base}/files`, icon: FileText, comingSoon: true },
+        { title: "Resources", href: `${base}/resources`, icon: FolderArchive },
         { title: "Activity", href: `${base}/activity`, icon: Activity, comingSoon: true },
       ],
     },

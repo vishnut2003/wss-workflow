@@ -1,5 +1,7 @@
-// Server-only. Reads WordPress credentials from environment variables and
-// produces the Basic auth header used by the WordPress REST API.
+import "server-only";
+
+// Reads WordPress credentials from environment variables and produces the
+// Basic auth header used by the WordPress REST API.
 
 export interface WordPressCredentials {
   username: string;

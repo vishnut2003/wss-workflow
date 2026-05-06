@@ -1,4 +1,6 @@
-// Server-only. Reusable WordPress media uploader.
+import "server-only";
+
+// Reusable WordPress media uploader.
 // Posts a file to /wp-json/wp/v2/media using Application Password auth.
 
 import { getWordPressAuthHeader, getWordPressCredentials } from "./auth";
