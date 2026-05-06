@@ -117,7 +117,12 @@ function buildProjectGroups(projectId: string): NavGroup[] {
       label: "Manage",
       items: [
         { title: "Team", href: `${base}/team`, icon: Users, comingSoon: true },
-        { title: "Settings", href: `${base}/settings`, icon: Settings, comingSoon: true },
+        {
+          title: "Project Settings",
+          href: `${base}/settings`,
+          icon: Settings,
+          minRole: "manager",
+        },
       ],
     },
   ];

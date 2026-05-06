@@ -12,14 +12,14 @@ import { ProjectsGrid } from "./_components/projects-grid";
 export default async function ProjectsPage() {
   const session = await requireSession();
   const role = session.user.role;
-  const canManage = hasAtLeast(role, "manager");
+  const canCreate = hasAtLeast(role, "admin");
   const canSeeAll = hasAtLeast(role, "admin");
 
   const projects = canSeeAll
     ? await listAllProjects()
     : await listProjectsForUser(session.user.id);
 
-  const [clients, managers] = canManage
+  const [clients, managers] = canCreate
     ? await Promise.all([listClients(), listManagers()])
     : [[], []];
 
@@ -36,14 +36,14 @@ export default async function ProjectsPage() {
               : "Projects you've created or are assigned to."}
           </p>
         </div>
-        {canManage ? (
+        {canCreate ? (
           <AddProjectDialog clients={clients} managers={managers} />
         ) : null}
       </div>
 
       <ProjectsGrid
         projects={projects}
-        canManage={canManage}
+        canManage={canCreate}
         scope={canSeeAll ? "all" : "mine"}
       />
     </div>

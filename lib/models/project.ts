@@ -35,6 +35,8 @@ export type CreateProjectInput = {
   createdBy: string;
 };
 
+export type UpdateProjectInput = Omit<CreateProjectInput, "createdBy">;
+
 let indexEnsured = false;
 
 async function projectsCollection(): Promise<Collection<ProjectDoc>> {
@@ -211,6 +213,44 @@ export async function findProjectForUser(
 
   const [enriched] = await enrichProjects([doc]);
   return enriched ?? null;
+}
+
+export async function updateProject(
+  id: string,
+  input: UpdateProjectInput
+): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  const col = await projectsCollection();
+
+  const clientId =
+    input.clientId && ObjectId.isValid(input.clientId)
+      ? new ObjectId(input.clientId)
+      : undefined;
+  const assigneeIds = (input.assigneeIds ?? [])
+    .filter((aid) => ObjectId.isValid(aid))
+    .map((aid) => new ObjectId(aid));
+
+  const $set: Partial<ProjectDoc> = {
+    name: input.name.trim(),
+    description: trimOrUndef(input.description),
+    status: input.status,
+    assigneeIds,
+    startDate: parseDate(input.startDate),
+    dueDate: parseDate(input.dueDate),
+    updatedAt: new Date(),
+  };
+  const $unset: Record<string, ""> = {};
+  if (clientId) $set.clientId = clientId;
+  else $unset.clientId = "";
+  if (!$set.startDate) $unset.startDate = "";
+  if (!$set.dueDate) $unset.dueDate = "";
+  if (!$set.description) $unset.description = "";
+
+  const update: Record<string, unknown> = { $set };
+  if (Object.keys($unset).length > 0) update.$unset = $unset;
+
+  const res = await col.updateOne({ _id: new ObjectId(id) }, update);
+  return res.matchedCount === 1;
 }
 
 export async function createProject(
