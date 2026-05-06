@@ -56,6 +56,7 @@ type NavItem = {
   badge?: string;
   comingSoon?: boolean;
   minRole?: Role;
+  exactRole?: Role;
 };
 
 type NavGroup = {
@@ -69,6 +70,7 @@ const workspaceGroups: NavGroup[] = [
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { title: "Projects", href: "/dashboard/projects", icon: FolderKanban },
+      { title: "Clients", href: "/dashboard/clients", icon: Building2, minRole: "admin" },
       { title: "Tasks", href: "/dashboard/tasks", icon: ListTodo, badge: "4" },
       { title: "Calendar", href: "/dashboard/calendar", icon: Calendar },
     ],
@@ -85,8 +87,7 @@ const workspaceGroups: NavGroup[] = [
     label: "Team",
     items: [
       { title: "Members", href: "/dashboard/members", icon: Users, minRole: "admin" },
-      { title: "My Team", href: "/dashboard/team", icon: UserCog, minRole: "manager" },
-      { title: "Clients", href: "/dashboard/clients", icon: Building2, minRole: "admin" },
+      { title: "My Team", href: "/dashboard/team", icon: UserCog, exactRole: "manager" },
     ],
   },
   {
@@ -169,9 +170,11 @@ export function AppSidebar({
   const visibleGroups = navGroups
     .map((group) => ({
       ...group,
-      items: group.items.filter(
-        (item) => !item.minRole || hasAtLeast(role, item.minRole)
-      ),
+      items: group.items.filter((item) => {
+        if (item.exactRole && role !== item.exactRole) return false;
+        if (item.minRole && !hasAtLeast(role, item.minRole)) return false;
+        return true;
+      }),
     }))
     .filter((group) => group.items.length > 0);
 

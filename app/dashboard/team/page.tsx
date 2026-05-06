@@ -1,7 +1,8 @@
+import { redirect } from "next/navigation";
 import { Mail, UserCog, Users } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { requireRole } from "@/lib/auth/session";
+import { requireSession } from "@/lib/auth/session";
 import { listMembersForManager } from "@/lib/models/user";
 
 function initialsOf(nameOrEmail: string) {
@@ -24,7 +25,8 @@ function formatJoinedDate(iso: string) {
 }
 
 export default async function TeamPage() {
-  const session = await requireRole("manager");
+  const session = await requireSession();
+  if (session.user.role !== "manager") redirect("/forbidden");
   const team = await listMembersForManager(session.user.id);
 
   return (
