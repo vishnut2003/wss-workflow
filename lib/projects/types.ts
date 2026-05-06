@@ -20,6 +20,13 @@ export type ProjectAssignee = {
   email: string;
 };
 
+export type ProjectMember = {
+  id: string;
+  name: string;
+  email: string;
+  managerId: string | null;
+};
+
 export type ProjectClientRef = {
   id: string;
   name: string;
@@ -33,6 +40,7 @@ export type ProjectListItem = {
   status: ProjectStatus;
   client: ProjectClientRef | null;
   assignees: ProjectAssignee[];
+  members: ProjectMember[];
   startDate: string;
   dueDate: string;
   createdBy: string;

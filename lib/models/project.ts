@@ -5,6 +5,7 @@ import { hasAtLeast, type Role } from "@/lib/auth/roles";
 import {
   isProjectStatus,
   type ProjectListItem,
+  type ProjectMember,
   type ProjectStatus,
 } from "@/lib/projects/types";
 import type { ClientDoc } from "@/lib/models/client";
@@ -17,6 +18,7 @@ export type ProjectDoc = {
   status: ProjectStatus;
   clientId?: ObjectId;
   assigneeIds: ObjectId[];
+  memberIds?: ObjectId[];
   startDate?: Date;
   dueDate?: Date;
   createdBy: string;
@@ -45,6 +47,7 @@ async function projectsCollection(): Promise<Collection<ProjectDoc>> {
   if (!indexEnsured) {
     await col.createIndex({ createdAt: -1 });
     await col.createIndex({ assigneeIds: 1 });
+    await col.createIndex({ memberIds: 1 });
     await col.createIndex({ createdBy: 1 });
     indexEnsured = true;
   }
@@ -75,6 +78,7 @@ function toIsoOrEmpty(d: Date | undefined): string {
 type EnrichedProject = WithId<ProjectDoc> & {
   clientDoc?: WithId<ClientDoc> | null;
   assigneeDocs?: WithId<UserDoc>[];
+  memberDocs?: WithId<UserDoc>[];
 };
 
 function toListItem(doc: EnrichedProject): ProjectListItem {
@@ -92,6 +96,13 @@ function toListItem(doc: EnrichedProject): ProjectListItem {
     email: u.email,
   }));
 
+  const members: ProjectMember[] = (doc.memberDocs ?? []).map((u) => ({
+    id: u._id.toString(),
+    name: u.name ?? "",
+    email: u.email,
+    managerId: u.managerId instanceof ObjectId ? u.managerId.toHexString() : null,
+  }));
+
   return {
     id: doc._id.toString(),
     name: doc.name,
@@ -99,6 +110,7 @@ function toListItem(doc: EnrichedProject): ProjectListItem {
     status: isProjectStatus(doc.status) ? doc.status : "planned",
     client,
     assignees,
+    members,
     startDate: toIsoOrEmpty(doc.startDate),
     dueDate: toIsoOrEmpty(doc.dueDate),
     createdBy: doc.createdBy,
@@ -133,6 +145,9 @@ async function enrichProjects(
     for (const a of d.assigneeIds ?? []) {
       if (a instanceof ObjectId) userIdSet.add(a.toHexString());
     }
+    for (const m of d.memberIds ?? []) {
+      if (m instanceof ObjectId) userIdSet.add(m.toHexString());
+    }
   }
   const userIds = Array.from(userIdSet).map((hex) => new ObjectId(hex));
 
@@ -166,6 +181,9 @@ async function enrichProjects(
       assigneeDocs: (d.assigneeIds ?? [])
         .map((a) => userMap.get(a.toHexString()))
         .filter((u): u is WithId<UserDoc> => Boolean(u)),
+      memberDocs: (d.memberIds ?? [])
+        .map((m) => userMap.get(m.toHexString()))
+        .filter((u): u is WithId<UserDoc> => Boolean(u)),
     })
   );
 }
@@ -184,9 +202,9 @@ export async function listProjectsForUser(
     $or: [{ createdBy: userId }] as Record<string, unknown>[],
   };
   if (ObjectId.isValid(userId)) {
-    (filter.$or as Record<string, unknown>[]).push({
-      assigneeIds: new ObjectId(userId),
-    });
+    const oid = new ObjectId(userId);
+    (filter.$or as Record<string, unknown>[]).push({ assigneeIds: oid });
+    (filter.$or as Record<string, unknown>[]).push({ memberIds: oid });
   }
   const docs = await col.find(filter).sort({ createdAt: -1 }).toArray();
   return enrichProjects(docs);
@@ -208,7 +226,10 @@ export async function findProjectForUser(
     const isAssignee = ObjectId.isValid(userId)
       ? doc.assigneeIds.some((a) => a.toHexString() === userId)
       : false;
-    if (!isCreator && !isAssignee) return null;
+    const isMember = ObjectId.isValid(userId)
+      ? (doc.memberIds ?? []).some((m) => m.toHexString() === userId)
+      : false;
+    if (!isCreator && !isAssignee && !isMember) return null;
   }
 
   const [enriched] = await enrichProjects([doc]);
@@ -230,26 +251,52 @@ export async function updateProject(
     .filter((aid) => ObjectId.isValid(aid))
     .map((aid) => new ObjectId(aid));
 
+  const description = trimOrUndef(input.description);
+  const startDate = parseDate(input.startDate);
+  const dueDate = parseDate(input.dueDate);
+
   const $set: Partial<ProjectDoc> = {
     name: input.name.trim(),
-    description: trimOrUndef(input.description),
     status: input.status,
     assigneeIds,
-    startDate: parseDate(input.startDate),
-    dueDate: parseDate(input.dueDate),
     updatedAt: new Date(),
   };
   const $unset: Record<string, ""> = {};
+
   if (clientId) $set.clientId = clientId;
   else $unset.clientId = "";
-  if (!$set.startDate) $unset.startDate = "";
-  if (!$set.dueDate) $unset.dueDate = "";
-  if (!$set.description) $unset.description = "";
 
-  const update: Record<string, unknown> = { $set };
-  if (Object.keys($unset).length > 0) update.$unset = $unset;
+  if (description) $set.description = description;
+  else $unset.description = "";
+
+  if (startDate) $set.startDate = startDate;
+  else $unset.startDate = "";
+
+  if (dueDate) $set.dueDate = dueDate;
+  else $unset.dueDate = "";
+
+  const update: Record<string, unknown> = { $set, $unset };
 
   const res = await col.updateOne({ _id: new ObjectId(id) }, update);
+  return res.matchedCount === 1;
+}
+
+export async function setProjectMembers(
+  projectId: string,
+  memberIds: string[]
+): Promise<boolean> {
+  if (!ObjectId.isValid(projectId)) return false;
+  const col = await projectsCollection();
+  const ids = Array.from(
+    new Set(memberIds.filter((id) => ObjectId.isValid(id)))
+  ).map((id) => new ObjectId(id));
+
+  const res = await col.updateOne(
+    { _id: new ObjectId(projectId) },
+    {
+      $set: { memberIds: ids, updatedAt: new Date() },
+    }
+  );
   return res.matchedCount === 1;
 }
 

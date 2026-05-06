@@ -118,7 +118,7 @@ function buildProjectGroups(projectId: string): NavGroup[] {
     {
       label: "Manage",
       items: [
-        { title: "Team", href: `${base}/team`, icon: Users, comingSoon: true },
+        { title: "Team", href: `${base}/team`, icon: Users },
         {
           title: "Project Settings",
           href: `${base}/settings`,
