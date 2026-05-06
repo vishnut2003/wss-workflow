@@ -34,7 +34,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             <span className="font-heading text-lg font-semibold">Workflow</span>
           </div>
 
-          <div className="rounded-3xl border border-white/40 bg-card/70 p-7 shadow-2xl shadow-theme-3/20 ring-1 ring-foreground/5 backdrop-blur-2xl backdrop-saturate-150 sm:p-9 dark:border-white/10 dark:bg-card/40">
+          <div className="rounded-3xl border border-white/40 bg-card/70 p-7 shadow-2xl shadow-theme-3/20 ring-1 ring-foreground/5 backdrop-blur-2xl backdrop-saturate-150 sm:p-9">
             <div className="mb-6 flex flex-col gap-1.5">
               <h1 className="font-heading text-2xl font-semibold tracking-tight">
                 Welcome back
