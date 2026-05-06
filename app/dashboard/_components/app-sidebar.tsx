@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FolderKanban,
-  ListTodo,
   Calendar,
+  MessageSquare,
   Users,
   UserCog,
   Building2,
@@ -70,8 +70,8 @@ const workspaceGroups: NavGroup[] = [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
       { title: "Projects", href: "/dashboard/projects", icon: FolderKanban },
       { title: "Clients", href: "/dashboard/clients", icon: Building2, minRole: "admin" },
-      { title: "Tasks", href: "/dashboard/tasks", icon: ListTodo, badge: "4" },
-      { title: "Calendar", href: "/dashboard/calendar", icon: Calendar },
+      { title: "Chat", href: "#", icon: MessageSquare, comingSoon: true },
+      { title: "Calendar", href: "#", icon: Calendar, comingSoon: true },
     ],
   },
   {
@@ -79,7 +79,7 @@ const workspaceGroups: NavGroup[] = [
     items: [
       { title: "Reports", href: "#", icon: BarChart3, comingSoon: true },
       { title: "Activity", href: "#", icon: Activity, comingSoon: true },
-      { title: "Notifications", href: "/dashboard/notifications", icon: Bell, badge: "3" },
+      { title: "Notifications", href: "#", icon: Bell, comingSoon: true },
     ],
   },
   {
