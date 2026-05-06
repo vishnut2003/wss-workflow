@@ -24,7 +24,6 @@ import {
   Search,
   FolderArchive,
   ListChecks,
-  ClipboardList,
 } from "lucide-react";
 
 import {
@@ -110,8 +109,7 @@ function buildProjectGroups(projectId: string): NavGroup[] {
       label: "Project",
       items: [
         { title: "Overview", href: base, icon: LayoutDashboard },
-        { title: "Tasks", href: `${base}/tasks`, icon: ListChecks, comingSoon: true },
-        { title: "Milestones", href: `${base}/milestones`, icon: ClipboardList, comingSoon: true },
+        { title: "Tasks", href: `${base}/tasks`, icon: ListChecks },
         { title: "Resources", href: `${base}/resources`, icon: FolderArchive },
         { title: "Activity", href: `${base}/activity`, icon: Activity, comingSoon: true },
       ],
