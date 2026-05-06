@@ -4,7 +4,8 @@ import { MembersPageContent } from "./_components/members-page-content";
 
 export default async function MembersPage() {
   const session = await requireRole("admin");
-  const [members, managers] = await Promise.all([listMembers(), listManagers()]);
+  const [members, allManagers] = await Promise.all([listMembers(), listManagers()]);
+  const managers = allManagers.filter((m) => m.role === "manager");
   const canAssignAdmin = session.user.role === "super_admin";
 
   return (

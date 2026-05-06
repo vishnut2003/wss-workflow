@@ -230,7 +230,7 @@ export async function isManagerId(id: string): Promise<boolean> {
   if (!ObjectId.isValid(id)) return false;
   const col = await usersCollection();
   const doc = await col.findOne(
-    { _id: new ObjectId(id), role: { $in: ["manager", "admin", "super_admin"] } },
+    { _id: new ObjectId(id), role: "manager" },
     { projection: { _id: 1 } }
   );
   return doc !== null;
