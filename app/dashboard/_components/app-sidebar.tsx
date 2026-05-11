@@ -141,7 +141,7 @@ function buildClientGroups(clientId: string): NavGroup[] {
       items: [
         { title: "Overview", href: base, icon: LayoutDashboard },
         { title: "Projects", href: `${base}/projects`, icon: FolderKanban },
-        { title: "Contacts", href: `${base}/contacts`, icon: Users, comingSoon: true },
+        { title: "Contacts", href: `${base}/contacts`, icon: Users },
       ],
     },
     {
