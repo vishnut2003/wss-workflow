@@ -24,7 +24,6 @@ import {
   Search,
   FolderArchive,
   ListChecks,
-  FileText,
   Receipt,
   CreditCard,
   NotebookPen,
@@ -149,7 +148,6 @@ function buildClientGroups(clientId: string): NavGroup[] {
       items: [
         { title: "Invoices", href: `${base}/invoices`, icon: Receipt, comingSoon: true },
         { title: "Payments", href: `${base}/payments`, icon: CreditCard, comingSoon: true },
-        { title: "Documents", href: `${base}/documents`, icon: FileText, comingSoon: true },
       ],
     },
     {
