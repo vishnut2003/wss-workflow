@@ -27,6 +27,7 @@ import {
   Receipt,
   CreditCard,
   NotebookPen,
+  CheckSquare,
 } from "lucide-react";
 
 import {
@@ -71,6 +72,7 @@ const workspaceGroups: NavGroup[] = [
     label: "Workspace",
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { title: "My tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
       { title: "Projects", href: "/dashboard/projects", icon: FolderKanban },
       { title: "Clients", href: "/dashboard/clients", icon: Building2, minRole: "admin" },
       { title: "Chat", href: "#", icon: MessageSquare, comingSoon: true },
@@ -153,6 +155,7 @@ function buildClientGroups(clientId: string): NavGroup[] {
     {
       label: "Activity",
       items: [
+        { title: "Tasks", href: `${base}/tasks`, icon: CheckSquare },
         { title: "Notes", href: `${base}/notes`, icon: NotebookPen },
       ],
     },

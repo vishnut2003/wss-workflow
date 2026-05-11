@@ -10,6 +10,7 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from "@/lib/tasks/types";
+import type { ProjectDoc } from "@/lib/models/project";
 import type { UserDoc } from "@/lib/models/user";
 
 export type TaskCommentDoc = {
@@ -188,6 +189,42 @@ export async function listTasksForProject(
     .toArray();
   const userMap = await buildUserMap(docs);
   return docs.map((d) => toListItem(d, userMap));
+}
+
+export type AssignedProjectTask = TaskListItem & {
+  projectName: string;
+};
+
+export async function listProjectTasksForAssignee(
+  userId: string
+): Promise<AssignedProjectTask[]> {
+  if (!ObjectId.isValid(userId)) return [];
+  const col = await tasksCollection();
+  const docs = await col
+    .find({ assigneeId: new ObjectId(userId) })
+    .sort({ status: 1, dueDate: 1, createdAt: -1 })
+    .toArray();
+  if (docs.length === 0) return [];
+
+  const userMap = await buildUserMap(docs);
+  const tasks = docs.map((d) => toListItem(d, userMap));
+
+  const projectIds = Array.from(
+    new Set(docs.map((d) => d.projectId.toHexString()))
+  ).map((hex) => new ObjectId(hex));
+
+  const db = await getDb();
+  const projects = await db
+    .collection<ProjectDoc>("projects")
+    .find({ _id: { $in: projectIds } }, { projection: { name: 1 } })
+    .toArray();
+  const projectMap = new Map<string, string>();
+  for (const p of projects) projectMap.set(p._id.toHexString(), p.name);
+
+  return tasks.map((task) => ({
+    ...task,
+    projectName: projectMap.get(task.projectId) ?? "Unknown project",
+  }));
 }
 
 export async function findTaskForProject(
