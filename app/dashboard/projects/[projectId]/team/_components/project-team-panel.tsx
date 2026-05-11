@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -65,10 +65,11 @@ export function ProjectTeamPanel({
   );
 
   const [selectedIds, setSelectedIds] = useState<string[]>(myInitialIds);
-
-  useEffect(() => {
+  const [seenInitialIds, setSeenInitialIds] = useState(myInitialIds);
+  if (seenInitialIds !== myInitialIds) {
+    setSeenInitialIds(myInitialIds);
     setSelectedIds(myInitialIds);
-  }, [myInitialIds]);
+  }
 
   const [state, action, pending] = useActionState<
     ProjectTeamFormState | undefined,

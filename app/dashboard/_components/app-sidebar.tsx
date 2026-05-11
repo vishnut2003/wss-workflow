@@ -27,7 +27,7 @@ import {
   FileText,
   Receipt,
   CreditCard,
-  Mail,
+  NotebookPen,
 } from "lucide-react";
 
 import {
@@ -155,8 +155,7 @@ function buildClientGroups(clientId: string): NavGroup[] {
     {
       label: "Activity",
       items: [
-        { title: "Communications", href: `${base}/communications`, icon: Mail, comingSoon: true },
-        { title: "Timeline", href: `${base}/timeline`, icon: Activity, comingSoon: true },
+        { title: "Notes", href: `${base}/notes`, icon: NotebookPen },
       ],
     },
   ];

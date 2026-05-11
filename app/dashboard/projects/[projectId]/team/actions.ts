@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth";
-import { hasAtLeast } from "@/lib/auth/roles";
 import { findProjectForUser, setProjectMembers } from "@/lib/models/project";
 import { findUserById, listMembersForManager } from "@/lib/models/user";
 
