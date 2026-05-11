@@ -24,6 +24,10 @@ import {
   Search,
   FolderArchive,
   ListChecks,
+  FileText,
+  Receipt,
+  CreditCard,
+  Mail,
 } from "lucide-react";
 
 import {
@@ -129,12 +133,42 @@ function buildProjectGroups(projectId: string): NavGroup[] {
   ];
 }
 
+function buildClientGroups(clientId: string): NavGroup[] {
+  const base = `/dashboard/clients/${clientId}`;
+  return [
+    {
+      label: "Client",
+      items: [
+        { title: "Overview", href: base, icon: LayoutDashboard },
+        { title: "Projects", href: `${base}/projects`, icon: FolderKanban },
+        { title: "Contacts", href: `${base}/contacts`, icon: Users, comingSoon: true },
+      ],
+    },
+    {
+      label: "Billing",
+      items: [
+        { title: "Invoices", href: `${base}/invoices`, icon: Receipt, comingSoon: true },
+        { title: "Payments", href: `${base}/payments`, icon: CreditCard, comingSoon: true },
+        { title: "Documents", href: `${base}/documents`, icon: FileText, comingSoon: true },
+      ],
+    },
+    {
+      label: "Activity",
+      items: [
+        { title: "Communications", href: `${base}/communications`, icon: Mail, comingSoon: true },
+        { title: "Timeline", href: `${base}/timeline`, icon: Activity, comingSoon: true },
+      ],
+    },
+  ];
+}
+
 const footerItems: NavItem[] = [
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
   { title: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
 ];
 
 const PROJECT_ID_RE = /^\/dashboard\/projects\/([^/]+)/;
+const CLIENT_ID_RE = /^\/dashboard\/clients\/([^/]+)/;
 
 export function AppSidebar({
   role,
@@ -152,10 +186,18 @@ export function AppSidebar({
     : null;
   const inProject = currentProject !== null;
 
+  const clientIdMatch = pathname.match(CLIENT_ID_RE);
+  const currentClientId = clientIdMatch?.[1] ?? null;
+  const inClient = currentClientId !== null;
+
   const isActive = (href: string) => {
     if (href === "/dashboard") return pathname === href;
     if (inProject && currentProject) {
       const base = `/dashboard/projects/${currentProject.id}`;
+      if (href === base) return pathname === base;
+    }
+    if (inClient && currentClientId) {
+      const base = `/dashboard/clients/${currentClientId}`;
       if (href === base) return pathname === base;
     }
     return pathname.startsWith(href);
@@ -163,7 +205,9 @@ export function AppSidebar({
 
   const navGroups = inProject && currentProject
     ? buildProjectGroups(currentProject.id)
-    : workspaceGroups;
+    : inClient && currentClientId
+      ? buildClientGroups(currentClientId)
+      : workspaceGroups;
 
   const visibleGroups = navGroups
     .map((group) => ({
@@ -217,6 +261,27 @@ export function AppSidebar({
                       <Link href="/dashboard/projects">
                         <ArrowLeft className="text-muted-foreground" />
                         <span>All projects</span>
+                      </Link>
+                    }
+                  />
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ) : null}
+
+        {inClient ? (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu className="gap-0.5">
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    tooltip="All clients"
+                    className="text-muted-foreground hover:text-foreground"
+                    render={
+                      <Link href="/dashboard/clients">
+                        <ArrowLeft className="text-muted-foreground" />
+                        <span>All clients</span>
                       </Link>
                     }
                   />

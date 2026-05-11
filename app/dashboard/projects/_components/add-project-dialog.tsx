@@ -23,22 +23,28 @@ import {
   type ProjectFormValues,
 } from "./project-form-fields";
 
-const INITIAL_VALUES: ProjectFormValues = {
-  name: "",
-  description: "",
-  status: "planned",
-  clientId: "",
-  assigneeIds: [],
-  startDate: "",
-  dueDate: "",
-};
+function buildInitialValues(clientId?: string): ProjectFormValues {
+  return {
+    name: "",
+    description: "",
+    status: "planned",
+    clientId: clientId ?? "",
+    assigneeIds: [],
+    startDate: "",
+    dueDate: "",
+  };
+}
 
 export function AddProjectDialog({
   clients,
   managers,
+  initialClientId,
+  triggerLabel,
 }: {
   clients: ClientListItem[];
   managers: MemberListItem[];
+  initialClientId?: string;
+  triggerLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -48,7 +54,7 @@ export function AddProjectDialog({
         render={
           <Button className="h-9 bg-linear-to-br from-theme-1 to-theme-3 text-white shadow-md shadow-theme-2/30 ring-1 ring-white/20 hover:brightness-105">
             <Plus />
-            Add project
+            {triggerLabel ?? "Add project"}
           </Button>
         }
       />
@@ -64,6 +70,7 @@ export function AddProjectDialog({
           <AddProjectForm
             clients={clients}
             managers={managers}
+            initialClientId={initialClientId}
             onSuccess={() => setOpen(false)}
           />
         ) : null}
@@ -75,13 +82,17 @@ export function AddProjectDialog({
 function AddProjectForm({
   clients,
   managers,
+  initialClientId,
   onSuccess,
 }: {
   clients: ClientListItem[];
   managers: MemberListItem[];
+  initialClientId?: string;
   onSuccess: () => void;
 }) {
-  const [values, setValues] = useState<ProjectFormValues>(INITIAL_VALUES);
+  const [values, setValues] = useState<ProjectFormValues>(() =>
+    buildInitialValues(initialClientId)
+  );
 
   const [state, action, pending] = useActionState<
     ProjectFormState | undefined,

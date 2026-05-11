@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Briefcase,
   Building2,
@@ -47,7 +49,6 @@ import {
 import { findCountry } from "@/lib/clients/countries";
 
 import { EditClientDialog } from "./edit-client-dialog";
-import { ViewClientDialog } from "./view-client-dialog";
 
 type StatusFilter = "all" | ClientStatus;
 
@@ -146,12 +147,13 @@ export function ClientsList({
   clients: ClientListItem[];
   canManage: boolean;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
 
   const [actionTarget, setActionTarget] = useState<ClientListItem | null>(null);
-  const [dialog, setDialog] = useState<"none" | "view" | "edit">("none");
+  const [dialog, setDialog] = useState<"none" | "edit">("none");
 
   const totalCounts = useMemo(() => countByStatus(clients), [clients]);
 
@@ -191,8 +193,7 @@ export function ClientsList({
     setDialog("edit");
   };
   const openView = (c: ClientListItem) => {
-    setActionTarget(c);
-    setDialog("view");
+    router.push(`/dashboard/clients/${c.id}`);
   };
   const closeDialog = (open: boolean) => {
     if (!open) {
@@ -350,9 +351,8 @@ export function ClientsList({
                       className="group border-border/40 transition-colors hover:bg-linear-to-r hover:from-theme-1/5 hover:to-transparent"
                     >
                       <TableCell className="px-5 py-3.5">
-                        <button
-                          type="button"
-                          onClick={() => openView(c)}
+                        <Link
+                          href={`/dashboard/clients/${c.id}`}
                           className="flex w-full items-center gap-3 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-theme-1/50"
                           aria-label={`View details for ${displayName}`}
                         >
@@ -381,7 +381,7 @@ export function ClientsList({
                               <StatusBadge status={c.status} />
                             </div>
                           </div>
-                        </button>
+                        </Link>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <div className="flex flex-col gap-0.5 text-xs">
@@ -544,16 +544,6 @@ export function ClientsList({
           </>
         )}
       </div>
-
-      <ViewClientDialog
-        open={dialog === "view"}
-        onOpenChange={closeDialog}
-        client={dialog === "view" ? actionTarget : null}
-        canManage={canManage}
-        onEdit={() => {
-          if (actionTarget) openEdit(actionTarget);
-        }}
-      />
 
       <EditClientDialog
         open={dialog === "edit"}

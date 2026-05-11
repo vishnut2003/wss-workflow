@@ -100,10 +100,16 @@ export function ProjectsGrid({
   projects,
   canManage,
   scope,
+  title,
+  emptyTitle,
+  emptyDescription,
 }: {
   projects: ProjectListItem[];
   canManage: boolean;
   scope: "all" | "mine";
+  title?: string;
+  emptyTitle?: string;
+  emptyDescription?: string;
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -153,7 +159,7 @@ export function ProjectsGrid({
             </div>
             <div className="flex flex-col">
               <h2 className="font-heading text-sm font-semibold leading-tight">
-                {scope === "all" ? "All projects" : "Your projects"}
+                {title ?? (scope === "all" ? "All projects" : "Your projects")}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {isFiltering
@@ -227,13 +233,14 @@ export function ProjectsGrid({
 
       {projects.length === 0 ? (
         <EmptyState
-          title="No projects yet"
+          title={emptyTitle ?? "No projects yet"}
           description={
-            canManage
+            emptyDescription ??
+            (canManage
               ? "Create your first project to get started."
               : scope === "mine"
                 ? "You haven't been assigned to any projects yet."
-                : "There are no projects yet."
+                : "There are no projects yet.")
           }
         />
       ) : filtered.length === 0 ? (

@@ -95,6 +95,14 @@ export async function findClientById(id: string): Promise<ClientDoc | null> {
   return col.findOne({ _id: new ObjectId(id) });
 }
 
+export async function findClientListItemById(
+  id: string
+): Promise<ClientListItem | null> {
+  const doc = await findClientById(id);
+  if (!doc) return null;
+  return toListItem(doc);
+}
+
 export async function createClient(input: CreateClientInput): Promise<{ id: string }> {
   const col = await clientsCollection();
   const now = new Date();

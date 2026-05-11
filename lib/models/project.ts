@@ -194,6 +194,18 @@ export async function listAllProjects(): Promise<ProjectListItem[]> {
   return enrichProjects(docs);
 }
 
+export async function listProjectsForClient(
+  clientId: string
+): Promise<ProjectListItem[]> {
+  if (!ObjectId.isValid(clientId)) return [];
+  const col = await projectsCollection();
+  const docs = await col
+    .find({ clientId: new ObjectId(clientId) })
+    .sort({ createdAt: -1 })
+    .toArray();
+  return enrichProjects(docs);
+}
+
 export async function listProjectsForUser(
   userId: string
 ): Promise<ProjectListItem[]> {

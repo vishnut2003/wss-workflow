@@ -1,5 +1,4 @@
-"use client";
-
+import { notFound } from "next/navigation";
 import {
   Briefcase,
   Building2,
@@ -7,7 +6,6 @@ import {
   Globe,
   Mail,
   MapPin,
-  Pencil,
   Phone,
   StickyNote,
   Tag,
@@ -15,17 +13,10 @@ import {
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import type { ClientListItem, ClientStatus } from "@/lib/clients/types";
+import { requireRole } from "@/lib/auth/session";
+import { findClientListItemById } from "@/lib/models/client";
 import { findCountry } from "@/lib/clients/countries";
+import type { ClientListItem, ClientStatus } from "@/lib/clients/types";
 
 const STATUS_LABEL: Record<ClientStatus, string> = {
   active: "Active",
@@ -68,51 +59,16 @@ function normalizeUrl(value: string): string {
   return `https://${value}`;
 }
 
-export function ViewClientDialog({
-  open,
-  onOpenChange,
-  client,
-  canManage,
-  onEdit,
+export default async function ClientDetailPage({
+  params,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  client: ClientListItem | null;
-  canManage: boolean;
-  onEdit: () => void;
+  params: Promise<{ clientId: string }>;
 }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader className="sr-only">
-          <DialogTitle>Client details</DialogTitle>
-        </DialogHeader>
-        {client ? <ViewClientBody client={client} /> : null}
+  await requireRole("admin");
+  const { clientId } = await params;
+  const client = await findClientListItemById(clientId);
+  if (!client) notFound();
 
-        <DialogFooter>
-          <DialogClose render={<Button type="button" variant="outline" />}>
-            Close
-          </DialogClose>
-          {canManage ? (
-            <Button
-              type="button"
-              onClick={() => {
-                onOpenChange(false);
-                window.setTimeout(onEdit, 150);
-              }}
-              className="bg-linear-to-br from-theme-1 to-theme-3 text-white shadow-md shadow-theme-2/30 ring-1 ring-white/20 hover:brightness-105"
-            >
-              <Pencil />
-              Edit client
-            </Button>
-          ) : null}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function ViewClientBody({ client }: { client: ClientListItem }) {
   const country = findCountry(client.phoneCountry);
   const phoneDisplay = client.phone
     ? country
@@ -128,39 +84,67 @@ function ViewClientBody({ client }: { client: ClientListItem }) {
   const displayName = client.name || client.company || client.email || "Untitled";
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-start gap-4">
-        <Avatar className="size-14 ring-2 ring-background">
-          <AvatarFallback className="bg-linear-to-br from-theme-1/40 to-theme-3/30 text-base font-semibold text-theme-3 dark:text-theme-1">
-            {initialsOf(client.company || client.name)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <h2 className="truncate font-heading text-lg font-semibold tracking-tight">
-            {displayName}
-          </h2>
-          {client.company && client.name ? (
-            <p className="inline-flex items-center gap-1 truncate text-sm text-muted-foreground">
-              <Building2 className="size-3.5 shrink-0 opacity-70" />
-              <span className="truncate">{client.company}</span>
-            </p>
-          ) : null}
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span
-              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_BADGE[client.status]}`}
-            >
-              {STATUS_LABEL[client.status]}
-            </span>
-            {client.industry ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground ring-1 ring-border">
-                <Briefcase className="size-3" />
-                {client.industry}
-              </span>
+    <div className="flex flex-col gap-6">
+      <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm ring-1 ring-foreground/5">
+        <div className="flex items-start gap-4">
+          <Avatar className="size-16 ring-2 ring-background">
+            <AvatarFallback className="bg-linear-to-br from-theme-1/40 to-theme-3/30 text-lg font-semibold text-theme-3 dark:text-theme-1">
+              {initialsOf(client.company || client.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <h1 className="truncate font-heading text-2xl font-semibold tracking-tight">
+              {displayName}
+            </h1>
+            {client.company && client.name ? (
+              <p className="inline-flex items-center gap-1.5 truncate text-sm text-muted-foreground">
+                <Building2 className="size-3.5 shrink-0 opacity-70" />
+                <span className="truncate">{client.company}</span>
+              </p>
             ) : null}
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              <span
+                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${STATUS_BADGE[client.status]}`}
+              >
+                {STATUS_LABEL[client.status]}
+              </span>
+              {client.industry ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground ring-1 ring-border">
+                  <Briefcase className="size-3" />
+                  {client.industry}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
 
+      <ClientDetails
+        client={client}
+        location={location}
+        phoneDisplay={phoneDisplay}
+        phoneTel={phoneTel}
+        countryFlag={country?.flag}
+      />
+    </div>
+  );
+}
+
+function ClientDetails({
+  client,
+  location,
+  phoneDisplay,
+  phoneTel,
+  countryFlag,
+}: {
+  client: ClientListItem;
+  location: string;
+  phoneDisplay: string;
+  phoneTel: string;
+  countryFlag: string | undefined;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
       <dl className="grid gap-3 sm:grid-cols-2">
         <DetailRow
           icon={UserIcon}
@@ -182,7 +166,7 @@ function ViewClientBody({ client }: { client: ClientListItem }) {
           icon={Phone}
           label="Phone"
           value={phoneDisplay || undefined}
-          prefix={country?.flag}
+          prefix={countryFlag}
           href={phoneTel ? `tel:${phoneTel}` : undefined}
         />
         <DetailRow
