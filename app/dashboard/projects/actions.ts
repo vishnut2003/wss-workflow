@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 import { auth } from "@/lib/auth";
 import { hasAtLeast } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import {
   createProject,
   findProjectForUser,
@@ -118,7 +119,7 @@ export async function addProjectAction(
   formData: FormData
 ): Promise<ProjectFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "projects.create"))) {
     return { error: "You do not have permission to add projects." };
   }
 
@@ -149,7 +150,7 @@ export async function updateProjectAction(
   formData: FormData
 ): Promise<ProjectFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "manager")) {
+  if (!session?.user || !(await can(session.user.role, "projects.edit"))) {
     return { error: "You do not have permission to edit projects." };
   }
 

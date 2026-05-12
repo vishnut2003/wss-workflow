@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { requireRole } from "@/lib/auth/session";
+import { requireCan } from "@/lib/permissions/check";
 import { findClientListItemById } from "@/lib/models/client";
 import { listNotesForClient } from "@/lib/models/client-note";
 
@@ -12,7 +12,7 @@ export default async function ClientNotesPage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  const session = await requireRole("admin");
+  const session = await requireCan("pages.clients");
   const { clientId } = await params;
   const client = await findClientListItemById(clientId);
   if (!client) notFound();

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { hasAtLeast, isRole, type Role } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import {
   createUser,
   deleteUserById,
@@ -58,7 +59,7 @@ export async function addMemberAction(
   formData: FormData
 ): Promise<AddMemberState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "members.add"))) {
     return { error: "You do not have permission to add members." };
   }
 
@@ -118,7 +119,7 @@ export async function assignManagerAction(
   formData: FormData
 ): Promise<AssignManagerState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "members.assignManager"))) {
     return { error: "You do not have permission to change a member's manager." };
   }
 
@@ -160,7 +161,7 @@ export async function deleteMemberAction(
   formData: FormData
 ): Promise<DeleteMemberState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "members.delete"))) {
     return { error: "You do not have permission to delete members." };
   }
 
@@ -196,7 +197,7 @@ export async function resetPasswordAction(
   formData: FormData
 ): Promise<ResetPasswordState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "members.resetPassword"))) {
     return { error: "You do not have permission to reset passwords." };
   }
 
@@ -237,7 +238,7 @@ export async function updateMemberRoleAction(
   formData: FormData
 ): Promise<UpdateRoleState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "members.changeRole"))) {
     return { error: "You do not have permission to change roles." };
   }
 

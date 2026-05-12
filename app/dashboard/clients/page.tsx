@@ -1,13 +1,12 @@
-import { requireRole } from "@/lib/auth/session";
+import { can, requireCan } from "@/lib/permissions/check";
 import { listClients } from "@/lib/models/client";
-import { hasAtLeast } from "@/lib/auth/roles";
 import { AddClientDialog } from "./_components/add-client-dialog";
 import { ClientsList } from "./_components/clients-list";
 
 export default async function ClientsPage() {
-  const session = await requireRole("admin");
+  const session = await requireCan("pages.clients");
   const clients = await listClients();
-  const canManage = hasAtLeast(session.user.role, "admin");
+  const canManage = await can(session.user.role, "clients.create");
 
   return (
     <div className="flex flex-col gap-6">

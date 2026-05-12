@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth";
 import { hasAtLeast, type Role } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import { findProjectForUser } from "@/lib/models/project";
 import {
   addTaskComment,
@@ -87,6 +88,9 @@ export async function createTaskAction(
   if (!guard.ok) return { error: guard.error };
   if (!guard.isManager) {
     return { error: "Only managers and admins can create tasks." };
+  }
+  if (!(await can(guard.userRole, "projects.tasks.manage"))) {
+    return { error: "You do not have permission to manage tasks." };
   }
 
   const title = readField(formData, "title");
@@ -270,6 +274,9 @@ export async function deleteTaskAction(
 
   if (!guard.isManager) {
     return { error: "Only managers and admins can delete tasks." };
+  }
+  if (!(await can(guard.userRole, "projects.tasks.manage"))) {
+    return { error: "You do not have permission to manage tasks." };
   }
 
   try {

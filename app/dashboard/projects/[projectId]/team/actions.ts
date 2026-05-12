@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth";
+import { can } from "@/lib/permissions/check";
 import { findProjectForUser, setProjectMembers } from "@/lib/models/project";
 import { findUserById, listMembersForManager } from "@/lib/models/user";
 
@@ -41,6 +42,10 @@ export async function updateProjectTeamAction(
     return {
       error: "Only managers can change a project's team members.",
     };
+  }
+
+  if (!(await can(session.user.role, "projects.team.manage"))) {
+    return { error: "You do not have permission to manage the project team." };
   }
 
   const project = await findProjectForUser(

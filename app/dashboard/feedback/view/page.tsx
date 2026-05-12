@@ -1,9 +1,9 @@
-import { requireRole } from "@/lib/auth/session";
+import { requireCan } from "@/lib/permissions/check";
 import { listFeedback } from "@/lib/models/feedback";
 import { FeedbackList } from "./_components/feedback-list";
 
 export default async function FeedbackViewPage() {
-  await requireRole("super_admin");
+  await requireCan("pages.feedback.inbox");
   const feedback = await listFeedback();
 
   return (

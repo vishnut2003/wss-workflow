@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { hasAtLeast } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import { findClientById } from "@/lib/models/client";
 import {
   createNote,
@@ -28,7 +28,7 @@ export async function addNoteAction(
   formData: FormData
 ): Promise<NoteFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.notes.manage"))) {
     return { error: "You do not have permission to add notes." };
   }
 
@@ -65,7 +65,7 @@ export async function updateNoteAction(
   formData: FormData
 ): Promise<NoteFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.notes.manage"))) {
     return { error: "You do not have permission to edit notes." };
   }
 
@@ -96,7 +96,7 @@ export async function deleteNoteAction(
   formData: FormData
 ): Promise<NoteFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.notes.manage"))) {
     return { error: "You do not have permission to delete notes." };
   }
 
@@ -121,7 +121,7 @@ export async function togglePinNoteAction(
   formData: FormData
 ): Promise<NoteFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.notes.manage"))) {
     return { error: "You do not have permission to pin notes." };
   }
 

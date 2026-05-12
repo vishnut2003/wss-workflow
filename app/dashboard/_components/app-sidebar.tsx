@@ -28,6 +28,7 @@ import {
   CreditCard,
   NotebookPen,
   CheckSquare,
+  ShieldCheck,
 } from "lucide-react";
 
 import {
@@ -60,6 +61,7 @@ type NavItem = {
   comingSoon?: boolean;
   minRole?: Role;
   exactRole?: Role;
+  capability?: string;
 };
 
 type NavGroup = {
@@ -71,10 +73,10 @@ const workspaceGroups: NavGroup[] = [
   {
     label: "Workspace",
     items: [
-      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "My tasks", href: "/dashboard/my-tasks", icon: CheckSquare },
-      { title: "Projects", href: "/dashboard/projects", icon: FolderKanban },
-      { title: "Clients", href: "/dashboard/clients", icon: Building2, minRole: "admin" },
+      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard, capability: "pages.dashboard" },
+      { title: "My tasks", href: "/dashboard/my-tasks", icon: CheckSquare, capability: "pages.my-tasks" },
+      { title: "Projects", href: "/dashboard/projects", icon: FolderKanban, capability: "pages.projects" },
+      { title: "Clients", href: "/dashboard/clients", icon: Building2, capability: "pages.clients" },
       { title: "Chat", href: "#", icon: MessageSquare, comingSoon: true },
       { title: "Calendar", href: "#", icon: Calendar, comingSoon: true },
     ],
@@ -90,8 +92,8 @@ const workspaceGroups: NavGroup[] = [
   {
     label: "Team",
     items: [
-      { title: "Members", href: "/dashboard/members", icon: Users, minRole: "admin" },
-      { title: "My Team", href: "/dashboard/team", icon: UserCog, exactRole: "manager" },
+      { title: "Members", href: "/dashboard/members", icon: Users, capability: "pages.members" },
+      { title: "My Team", href: "/dashboard/team", icon: UserCog, capability: "pages.team" },
     ],
   },
   {
@@ -101,7 +103,13 @@ const workspaceGroups: NavGroup[] = [
         title: "Feedback",
         href: "/dashboard/feedback/view",
         icon: Inbox,
-        minRole: "super_admin",
+        capability: "pages.feedback.inbox",
+      },
+      {
+        title: "Manage permissions",
+        href: "/dashboard/permissions",
+        icon: ShieldCheck,
+        exactRole: "super_admin",
       },
     ],
   },
@@ -172,10 +180,13 @@ const CLIENT_ID_RE = /^\/dashboard\/clients\/([^/]+)/;
 export function AppSidebar({
   role,
   projects,
+  capabilities,
 }: {
   role: Role;
   projects: SidebarProject[];
+  capabilities: string[];
 }) {
+  const capSet = useMemo(() => new Set(capabilities), [capabilities]);
   const pathname = usePathname();
 
   const projectIdMatch = pathname.match(PROJECT_ID_RE);
@@ -214,6 +225,7 @@ export function AppSidebar({
       items: group.items.filter((item) => {
         if (item.exactRole && role !== item.exactRole) return false;
         if (item.minRole && !hasAtLeast(role, item.minRole)) return false;
+        if (item.capability && !capSet.has(item.capability)) return false;
         return true;
       }),
     }))

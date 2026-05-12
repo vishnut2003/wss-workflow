@@ -5,6 +5,7 @@ import { ObjectId } from "mongodb";
 
 import { auth } from "@/lib/auth";
 import { hasAtLeast, type Role } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import { findProjectForUser } from "@/lib/models/project";
 import {
   createFileResource,
@@ -74,6 +75,9 @@ export async function uploadFileResourceAction(
   const projectId = readField(formData, "projectId");
   const guard = await authorizeProject(projectId);
   if (!guard.ok) return { error: guard.error };
+  if (!(await can(guard.userRole, "projects.resources.manage"))) {
+    return { error: "You do not have permission to manage resources." };
+  }
 
   const title = readField(formData, "title");
   const description = readField(formData, "description");
@@ -131,6 +135,9 @@ export async function addLinkResourceAction(
   const projectId = readField(formData, "projectId");
   const guard = await authorizeProject(projectId);
   if (!guard.ok) return { error: guard.error };
+  if (!(await can(guard.userRole, "projects.resources.manage"))) {
+    return { error: "You do not have permission to manage resources." };
+  }
 
   const title = readField(formData, "title");
   const description = readField(formData, "description");
@@ -189,6 +196,9 @@ export async function deleteResourceAction(
     guard.project.assignees.some((a) => a.id === guard.userId);
   if (!isCreator && !isAdmin && !isAssignedManager) {
     return { error: "You can only remove resources you added." };
+  }
+  if (!(await can(guard.userRole, "projects.resources.manage"))) {
+    return { error: "You do not have permission to manage resources." };
   }
 
   try {

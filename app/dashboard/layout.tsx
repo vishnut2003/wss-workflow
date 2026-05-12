@@ -3,6 +3,7 @@ import { hasAtLeast } from "@/lib/auth/roles";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { listAllProjects, listProjectsForUser } from "@/lib/models/project";
 import { findUserById } from "@/lib/models/user";
+import { getEffectiveCapabilities } from "@/lib/permissions/check";
 import type { SidebarProject } from "@/lib/projects/types";
 import { AppSidebar } from "./_components/app-sidebar";
 import { DashboardHeader } from "./_components/dashboard-header";
@@ -43,9 +44,12 @@ export default async function DashboardLayout({
     managerName,
   };
 
-  const projects = hasAtLeast(user.role, "admin")
-    ? await listAllProjects()
-    : await listProjectsForUser(session.user.id);
+  const [projects, capabilitySet] = await Promise.all([
+    hasAtLeast(user.role, "admin")
+      ? listAllProjects()
+      : listProjectsForUser(session.user.id),
+    getEffectiveCapabilities(user.role),
+  ]);
 
   const sidebarProjects: SidebarProject[] = projects.map((p) => ({
     id: p.id,
@@ -54,9 +58,15 @@ export default async function DashboardLayout({
     clientLabel: p.client?.company || p.client?.name || "",
   }));
 
+  const capabilities = Array.from(capabilitySet);
+
   return (
     <SidebarProvider>
-      <AppSidebar role={user.role} projects={sidebarProjects} />
+      <AppSidebar
+        role={user.role}
+        projects={sidebarProjects}
+        capabilities={capabilities}
+      />
       <SidebarInset className="bg-linear-to-br from-background via-background to-theme-1/4">
         <DashboardHeader user={user} logoutAction={logoutAction} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>

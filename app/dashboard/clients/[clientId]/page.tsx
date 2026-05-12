@@ -24,7 +24,7 @@ import {
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { requireRole } from "@/lib/auth/session";
+import { requireCan } from "@/lib/permissions/check";
 import { findClientListItemById } from "@/lib/models/client";
 import { listProjectsForClient } from "@/lib/models/project";
 import { listContactsForClient } from "@/lib/models/client-contact";
@@ -146,7 +146,7 @@ export default async function ClientDetailPage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  await requireRole("admin");
+  await requireCan("pages.clients");
   const { clientId } = await params;
   const client = await findClientListItemById(clientId);
   if (!client) notFound();

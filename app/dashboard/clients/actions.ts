@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { hasAtLeast } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import {
   createClient,
   findClientById,
@@ -97,7 +97,7 @@ export async function addClientAction(
   formData: FormData
 ): Promise<ClientFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.create"))) {
     return { error: "You do not have permission to add clients." };
   }
 
@@ -119,7 +119,7 @@ export async function updateClientAction(
   formData: FormData
 ): Promise<ClientFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.edit"))) {
     return { error: "You do not have permission to update clients." };
   }
 

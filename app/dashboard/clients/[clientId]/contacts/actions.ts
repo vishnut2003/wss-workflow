@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { hasAtLeast } from "@/lib/auth/roles";
+import { can } from "@/lib/permissions/check";
 import {
   createContact,
   deleteContact,
@@ -118,7 +118,7 @@ export async function addContactAction(
   formData: FormData
 ): Promise<ContactFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.contacts.manage"))) {
     return { error: "You do not have permission to add contacts." };
   }
 
@@ -151,7 +151,7 @@ export async function updateContactAction(
   formData: FormData
 ): Promise<ContactFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.contacts.manage"))) {
     return { error: "You do not have permission to update contacts." };
   }
 
@@ -186,7 +186,7 @@ export async function deleteContactAction(
   formData: FormData
 ): Promise<ContactFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.contacts.manage"))) {
     return { error: "You do not have permission to delete contacts." };
   }
 
@@ -212,7 +212,7 @@ export async function setPrimaryContactAction(
   formData: FormData
 ): Promise<ContactFormState> {
   const session = await auth();
-  if (!session?.user || !hasAtLeast(session.user.role, "admin")) {
+  if (!session?.user || !(await can(session.user.role, "clients.contacts.manage"))) {
     return { error: "You do not have permission to update contacts." };
   }
 
