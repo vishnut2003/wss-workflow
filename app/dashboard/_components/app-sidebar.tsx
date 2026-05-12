@@ -155,7 +155,6 @@ function buildClientGroups(clientId: string): NavGroup[] {
     {
       label: "Activity",
       items: [
-        { title: "Tasks", href: `${base}/tasks`, icon: CheckSquare },
         { title: "Notes", href: `${base}/notes`, icon: NotebookPen },
       ],
     },

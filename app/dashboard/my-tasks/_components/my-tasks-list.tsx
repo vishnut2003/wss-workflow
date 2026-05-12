@@ -4,7 +4,6 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
-  Building2,
   CalendarClock,
   Check,
   CheckCircle2,
@@ -16,14 +15,8 @@ import {
   Lock,
 } from "lucide-react";
 
-import type { ClientListItem } from "@/lib/clients/types";
-
-import { ViewClientDialog } from "../../clients/_components/view-client-dialog";
-import type { MyTaskItem, MyTaskSource } from "../_lib/types";
-import {
-  toggleMyClientTaskAction,
-  toggleMyProjectTaskAction,
-} from "../actions";
+import type { MyTaskItem } from "../_lib/types";
+import { toggleMyProjectTaskAction } from "../actions";
 
 function formatLongDate(iso: string): string {
   if (!iso) return "";
@@ -76,29 +69,13 @@ function dueLabel(iso: string): string {
   return `Due ${formatLongDate(iso)}`;
 }
 
-const SOURCE_LABEL: Record<MyTaskSource, string> = {
-  client: "Client",
-  project: "Project",
-};
-
-const SOURCE_CHIP: Record<MyTaskSource, string> = {
-  client:
-    "bg-theme-1/10 text-theme-3 ring-theme-1/25 dark:text-theme-1",
-  project:
-    "bg-violet-500/10 text-violet-700 ring-violet-500/25 dark:text-violet-300",
-};
+const SOURCE_CHIP =
+  "bg-violet-500/10 text-violet-700 ring-violet-500/25 dark:text-violet-300";
 
 export function MyTasksList({ items }: { items: MyTaskItem[] }) {
   const [showDone, setShowDone] = useState(false);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [, startTransition] = useTransition();
-  const [viewClient, setViewClient] = useState<ClientListItem | null>(null);
-
-  const closeViewClient = (open: boolean) => {
-    if (!open) {
-      window.setTimeout(() => setViewClient(null), 150);
-    }
-  };
 
   const { open, done } = useMemo(() => {
     const o: MyTaskItem[] = [];
@@ -126,14 +103,9 @@ export function MyTasksList({ items }: { items: MyTaskItem[] }) {
     if (!item.canToggle) return;
     const fd = new FormData();
     fd.set("taskId", item.id);
-    const key = `${item.source}:${item.id}`;
-    setPendingKey(key);
+    setPendingKey(item.id);
     startTransition(async () => {
-      if (item.source === "client") {
-        await toggleMyClientTaskAction(undefined, fd);
-      } else {
-        await toggleMyProjectTaskAction(undefined, fd);
-      }
+      await toggleMyProjectTaskAction(undefined, fd);
       setPendingKey(null);
     });
   };
@@ -156,66 +128,56 @@ export function MyTasksList({ items }: { items: MyTaskItem[] }) {
   }
 
   return (
-    <>
-      <div className="flex flex-col gap-3">
-        <SectionHeader title="Open" count={open.length} />
-        {open.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/60 bg-card/40 px-4 py-6 text-center text-xs text-muted-foreground">
-            All caught up — everything assigned to you is done.
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {open.map((item) => (
-              <li key={`${item.source}:${item.id}`}>
-                <TaskRow
-                  item={item}
-                  pending={pendingKey === `${item.source}:${item.id}`}
-                  onToggle={() => toggle(item)}
-                  onViewClient={setViewClient}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="flex flex-col gap-3">
+      <SectionHeader title="Open" count={open.length} />
+      {open.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border/60 bg-card/40 px-4 py-6 text-center text-xs text-muted-foreground">
+          All caught up — everything assigned to you is done.
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {open.map((item) => (
+            <li key={item.id}>
+              <TaskRow
+                item={item}
+                pending={pendingKey === item.id}
+                onToggle={() => toggle(item)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
 
-        {done.length > 0 ? (
-          <div className="mt-2 flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setShowDone((prev) => !prev)}
-              className="inline-flex w-fit items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {showDone ? (
-                <ChevronDown className="size-3.5" />
-              ) : (
-                <ChevronRight className="size-3.5" />
-              )}
-              {showDone ? "Hide" : "Show"} {done.length} completed
-            </button>
+      {done.length > 0 ? (
+        <div className="mt-2 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setShowDone((prev) => !prev)}
+            className="inline-flex w-fit items-center gap-1.5 rounded-md text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
             {showDone ? (
-              <ul className="flex flex-col gap-2">
-                {done.map((item) => (
-                  <li key={`${item.source}:${item.id}`}>
-                    <TaskRow
-                      item={item}
-                      pending={pendingKey === `${item.source}:${item.id}`}
-                      onToggle={() => toggle(item)}
-                      onViewClient={setViewClient}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-
-      <ViewClientDialog
-        open={viewClient !== null}
-        onOpenChange={closeViewClient}
-        client={viewClient}
-      />
-    </>
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <ChevronRight className="size-3.5" />
+            )}
+            {showDone ? "Hide" : "Show"} {done.length} completed
+          </button>
+          {showDone ? (
+            <ul className="flex flex-col gap-2">
+              {done.map((item) => (
+                <li key={item.id}>
+                  <TaskRow
+                    item={item}
+                    pending={pendingKey === item.id}
+                    onToggle={() => toggle(item)}
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -234,17 +196,13 @@ function TaskRow({
   item,
   pending,
   onToggle,
-  onViewClient,
 }: {
   item: MyTaskItem;
   pending: boolean;
   onToggle: () => void;
-  onViewClient: (client: ClientListItem) => void;
 }) {
   const tone = dueTone(item.dueDate);
   const dueText = dueLabel(item.dueDate);
-  const SourceIcon = item.source === "client" ? Building2 : FolderKanban;
-  const clientForView = item.source === "client" ? item.client : null;
   const checkboxDisabled = pending || !item.canToggle;
 
   const checkboxLabel = !item.canToggle
@@ -253,7 +211,7 @@ function TaskRow({
       ? item.isInReview
         ? "Withdraw from review"
         : "Mark as not done"
-      : item.source === "project" && !item.isInReview
+      : !item.isInReview
         ? "Submit for review"
         : "Mark as done";
 
@@ -296,22 +254,12 @@ function TaskRow({
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="flex flex-wrap items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${SOURCE_CHIP[item.source]}`}
+            className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${SOURCE_CHIP}`}
           >
-            <SourceIcon className="size-2.5" />
-            {SOURCE_LABEL[item.source]}
+            <FolderKanban className="size-2.5" />
+            Project
           </span>
-          {clientForView ? (
-            <button
-              type="button"
-              onClick={() => onViewClient(clientForView)}
-              title="View client details"
-              className="inline-flex items-center gap-1 rounded-sm text-[11px] font-medium text-muted-foreground transition-colors outline-none hover:text-theme-3 focus-visible:text-theme-3"
-            >
-              <span className="truncate">{item.parentName}</span>
-              <Eye className="size-3 shrink-0 opacity-60" />
-            </button>
-          ) : item.parentHref ? (
+          {item.parentHref ? (
             <Link
               href={item.parentHref}
               className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-theme-3 hover:underline"

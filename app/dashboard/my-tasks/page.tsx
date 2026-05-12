@@ -1,6 +1,5 @@
 import { requireSession } from "@/lib/auth/session";
 import { hasAtLeast } from "@/lib/auth/roles";
-import { listClientTasksForAssignee } from "@/lib/models/client-task";
 import { listProjectTasksForAssignee } from "@/lib/models/task";
 
 import { MyTasksList } from "./_components/my-tasks-list";
@@ -9,64 +8,34 @@ import type { MyTaskItem } from "./_lib/types";
 export default async function MyTasksPage() {
   const session = await requireSession();
   const userId = session.user.id;
-  const canSeeClient = hasAtLeast(session.user.role, "admin");
   const canMarkDone = hasAtLeast(session.user.role, "manager");
 
-  const [clientTasks, projectTasks] = await Promise.all([
-    listClientTasksForAssignee(userId),
-    listProjectTasksForAssignee(userId),
-  ]);
+  const projectTasks = await listProjectTasksForAssignee(userId);
 
-  const items: MyTaskItem[] = [
-    ...clientTasks.map<MyTaskItem>((t) => {
-      const parentName = t.client
-        ? t.client.company?.trim() || t.client.name?.trim() || "Unnamed client"
-        : "Unknown client";
-      return {
-        source: "client",
-        id: t.id,
-        parentId: t.clientId,
-        parentName,
-        parentHref: canSeeClient ? `/dashboard/clients/${t.clientId}/tasks` : null,
-        title: t.title,
-        description: t.description,
-        isMyComplete: t.status === "done",
-        isInReview: false,
-        canToggle: true,
-        client: t.client,
-        dueDate: t.dueDate,
-        completedAt: t.completedAt,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-      };
-    }),
-    ...projectTasks.map<MyTaskItem>((t) => {
-      const isDone = t.status === "done";
-      const isInReview = t.status === "in_review";
-      // Member: "my part is done" once it's at least in_review.
-      // Manager+: only fully done counts.
-      const isMyComplete = canMarkDone ? isDone : isDone || isInReview;
-      // Member loses the ability to toggle once a manager has marked it done.
-      const canToggle = canMarkDone ? true : !isDone;
-      return {
-        source: "project",
-        id: t.id,
-        parentId: t.projectId,
-        parentName: t.projectName,
-        parentHref: `/dashboard/projects/${t.projectId}/tasks`,
-        title: t.title,
-        description: t.description,
-        isMyComplete,
-        isInReview,
-        canToggle,
-        client: null,
-        dueDate: t.dueDate,
-        completedAt: isDone ? t.updatedAt : "",
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-      };
-    }),
-  ];
+  const items: MyTaskItem[] = projectTasks.map<MyTaskItem>((t) => {
+    const isDone = t.status === "done";
+    const isInReview = t.status === "in_review";
+    // Member: "my part is done" once it's at least in_review.
+    // Manager+: only fully done counts.
+    const isMyComplete = canMarkDone ? isDone : isDone || isInReview;
+    // Member loses the ability to toggle once a manager has marked it done.
+    const canToggle = canMarkDone ? true : !isDone;
+    return {
+      id: t.id,
+      parentId: t.projectId,
+      parentName: t.projectName,
+      parentHref: `/dashboard/projects/${t.projectId}/tasks`,
+      title: t.title,
+      description: t.description,
+      isMyComplete,
+      isInReview,
+      canToggle,
+      dueDate: t.dueDate,
+      completedAt: isDone ? t.updatedAt : "",
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+    };
+  });
 
   const openCount = items.filter((i) => !i.isMyComplete).length;
   const doneCount = items.length - openCount;
@@ -80,7 +49,7 @@ export default async function MyTasksPage() {
         <p className="text-sm text-muted-foreground">
           {items.length === 0
             ? "You don't have any tasks assigned to you right now."
-            : `${openCount} open · ${doneCount} done · across projects and clients.`}
+            : `${openCount} open · ${doneCount} done.`}
         </p>
         {!canMarkDone ? (
           <p className="text-[11px] text-muted-foreground/80">
