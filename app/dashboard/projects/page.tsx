@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth/session";
+import { requireCan } from "@/lib/permissions/check";
 import { hasAtLeast } from "@/lib/auth/roles";
 import {
   listAllProjects,
@@ -10,7 +10,7 @@ import { AddProjectDialog } from "./_components/add-project-dialog";
 import { ProjectsGrid } from "./_components/projects-grid";
 
 export default async function ProjectsPage() {
-  const session = await requireSession();
+  const session = await requireCan("pages.projects");
   const role = session.user.role;
   const canCreate = hasAtLeast(role, "admin");
   const canSeeAll = hasAtLeast(role, "admin");

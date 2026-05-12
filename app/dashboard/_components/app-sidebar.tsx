@@ -25,7 +25,6 @@ import {
   FolderArchive,
   ListChecks,
   Receipt,
-  CreditCard,
   NotebookPen,
   CheckSquare,
   ShieldCheck,
@@ -156,8 +155,7 @@ function buildClientGroups(clientId: string): NavGroup[] {
     {
       label: "Billing",
       items: [
-        { title: "Invoices", href: `${base}/invoices`, icon: Receipt, comingSoon: true },
-        { title: "Payments", href: `${base}/payments`, icon: CreditCard, comingSoon: true },
+        { title: "Invoices", href: `${base}/invoices`, icon: Receipt, capability: "clients.invoices.view" },
       ],
     },
     {

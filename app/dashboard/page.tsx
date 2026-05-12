@@ -26,7 +26,7 @@ import {
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { requireSession } from "@/lib/auth/session";
+import { requireCan } from "@/lib/permissions/check";
 import { hasAtLeast, type Role } from "@/lib/auth/roles";
 import {
   listAllProjects,
@@ -179,7 +179,7 @@ function pickHighlightTask(tasks: TaskListItem[]): TaskListItem | null {
 }
 
 export default async function DashboardPage() {
-  const session = await requireSession();
+  const session = await requireCan("pages.dashboard");
   const role = (session.user.role ?? "member") as Role;
   const userId = session.user.id;
   const displayName =

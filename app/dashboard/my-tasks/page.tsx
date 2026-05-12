@@ -1,4 +1,4 @@
-import { requireSession } from "@/lib/auth/session";
+import { requireCan } from "@/lib/permissions/check";
 import { hasAtLeast } from "@/lib/auth/roles";
 import { listProjectTasksForAssignee } from "@/lib/models/task";
 
@@ -6,7 +6,7 @@ import { MyTasksList } from "./_components/my-tasks-list";
 import type { MyTaskItem } from "./_lib/types";
 
 export default async function MyTasksPage() {
-  const session = await requireSession();
+  const session = await requireCan("pages.my-tasks");
   const userId = session.user.id;
   const canMarkDone = hasAtLeast(session.user.role, "manager");
 

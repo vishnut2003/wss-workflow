@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { Monitor, Moon, Palette, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme-provider";
 
 const subscribe = () => () => {};
 const getSnapshot = () => true;

@@ -130,6 +130,27 @@ export const CAPABILITIES: Capability[] = [
     category: "clients",
     defaults: { admin: true },
   },
+  {
+    id: "clients.invoices.view",
+    label: "View client invoices",
+    description: "See the invoices list and individual invoices on a client.",
+    category: "clients",
+    defaults: { admin: true },
+  },
+  {
+    id: "clients.invoices.manage",
+    label: "Manage client invoices",
+    description: "Create, edit, and change the status of invoices.",
+    category: "clients",
+    defaults: { admin: true },
+  },
+  {
+    id: "clients.invoices.delete",
+    label: "Delete client invoices",
+    description: "Permanently remove an invoice.",
+    category: "clients",
+    defaults: { admin: true },
+  },
 
   // --- Projects ---
   {
