@@ -1,4 +1,4 @@
-import { requireCan } from "@/lib/permissions/check";
+import { can, requireCan } from "@/lib/permissions/check";
 import { hasAtLeast } from "@/lib/auth/roles";
 import {
   listAllProjects,
@@ -12,7 +12,7 @@ import { ProjectsGrid } from "./_components/projects-grid";
 export default async function ProjectsPage() {
   const session = await requireCan("pages.projects");
   const role = session.user.role;
-  const canCreate = hasAtLeast(role, "admin");
+  const canCreate = await can(role, "projects.create");
   const canSeeAll = hasAtLeast(role, "admin");
 
   const projects = canSeeAll
@@ -37,7 +37,12 @@ export default async function ProjectsPage() {
           </p>
         </div>
         {canCreate ? (
-          <AddProjectDialog clients={clients} managers={managers} />
+          <AddProjectDialog
+            clients={clients}
+            managers={managers}
+            currentUserId={session.user.id}
+            currentUserRole={role}
+          />
         ) : null}
       </div>
 

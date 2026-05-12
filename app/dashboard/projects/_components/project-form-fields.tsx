@@ -67,6 +67,7 @@ export function ProjectFormFields({
   disabled,
   idPrefix,
   canManageAssignees = true,
+  lockedAssigneeNote,
 }: {
   values: ProjectFormValues;
   onChange: <K extends keyof ProjectFormValues>(
@@ -78,16 +79,15 @@ export function ProjectFormFields({
   disabled?: boolean;
   idPrefix: string;
   canManageAssignees?: boolean;
+  lockedAssigneeNote?: string;
 }) {
   return (
     <>
       <input type="hidden" name="status" value={values.status} />
       <input type="hidden" name="clientId" value={values.clientId} />
-      {canManageAssignees
-        ? values.assigneeIds.map((id) => (
-            <input key={id} type="hidden" name="assigneeIds" value={id} />
-          ))
-        : null}
+      {values.assigneeIds.map((id) => (
+        <input key={id} type="hidden" name="assigneeIds" value={id} />
+      ))}
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -179,7 +179,8 @@ export function ProjectFormFields({
               />
               <p className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                 <Lock className="size-3 shrink-0" />
-                Only admins can change project assignees.
+                {lockedAssigneeNote ??
+                  "Only admins can change project assignees."}
               </p>
             </>
           )}

@@ -53,6 +53,8 @@ export default async function ClientProjectsPage({
             managers={managers}
             initialClientId={clientId}
             triggerLabel="New project"
+            currentUserId={session.user.id}
+            currentUserRole={session.user.role}
           />
         ) : null}
       </div>

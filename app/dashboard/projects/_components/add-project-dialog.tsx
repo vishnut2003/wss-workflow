@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import type { ClientListItem } from "@/lib/clients/types";
 import type { MemberListItem } from "@/lib/models/user";
+import type { Role } from "@/lib/auth/roles";
 
 import { addProjectAction, type ProjectFormState } from "../actions";
 import {
@@ -23,13 +24,16 @@ import {
   type ProjectFormValues,
 } from "./project-form-fields";
 
-function buildInitialValues(clientId?: string): ProjectFormValues {
+function buildInitialValues(
+  clientId?: string,
+  initialAssigneeIds: string[] = []
+): ProjectFormValues {
   return {
     name: "",
     description: "",
     status: "planned",
     clientId: clientId ?? "",
-    assigneeIds: [],
+    assigneeIds: initialAssigneeIds,
     startDate: "",
     dueDate: "",
   };
@@ -40,11 +44,15 @@ export function AddProjectDialog({
   managers,
   initialClientId,
   triggerLabel,
+  currentUserId,
+  currentUserRole,
 }: {
   clients: ClientListItem[];
   managers: MemberListItem[];
   initialClientId?: string;
   triggerLabel?: string;
+  currentUserId: string;
+  currentUserRole: Role;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -71,6 +79,8 @@ export function AddProjectDialog({
             clients={clients}
             managers={managers}
             initialClientId={initialClientId}
+            currentUserId={currentUserId}
+            currentUserRole={currentUserRole}
             onSuccess={() => setOpen(false)}
           />
         ) : null}
@@ -83,15 +93,23 @@ function AddProjectForm({
   clients,
   managers,
   initialClientId,
+  currentUserId,
+  currentUserRole,
   onSuccess,
 }: {
   clients: ClientListItem[];
   managers: MemberListItem[];
   initialClientId?: string;
+  currentUserId: string;
+  currentUserRole: Role;
   onSuccess: () => void;
 }) {
+  const isManagerCreator = currentUserRole === "manager";
   const [values, setValues] = useState<ProjectFormValues>(() =>
-    buildInitialValues(initialClientId)
+    buildInitialValues(
+      initialClientId,
+      isManagerCreator ? [currentUserId] : []
+    )
   );
 
   const [state, action, pending] = useActionState<
@@ -119,6 +137,12 @@ function AddProjectForm({
         managers={managers}
         disabled={pending}
         idPrefix="add-project"
+        canManageAssignees={!isManagerCreator}
+        lockedAssigneeNote={
+          isManagerCreator
+            ? "You'll be set as the project manager. Only an admin can reassign this later."
+            : undefined
+        }
       />
 
       {state?.error ? (

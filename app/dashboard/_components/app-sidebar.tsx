@@ -81,14 +81,6 @@ const workspaceGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Insights",
-    items: [
-      { title: "Reports", href: "#", icon: BarChart3, comingSoon: true },
-      { title: "Activity", href: "#", icon: Activity, comingSoon: true },
-      { title: "Notifications", href: "#", icon: Bell, comingSoon: true },
-    ],
-  },
-  {
     label: "Team",
     items: [
       { title: "Members", href: "/dashboard/members", icon: Users, capability: "pages.members" },

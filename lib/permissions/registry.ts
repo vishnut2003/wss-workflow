@@ -170,9 +170,10 @@ export const CAPABILITIES: Capability[] = [
   {
     id: "projects.create",
     label: "Create project",
-    description: "Spin up a new project.",
+    description:
+      "Spin up a new project. Managers are automatically assigned as the project manager on anything they create.",
     category: "projects",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true },
   },
   {
     id: "projects.edit",

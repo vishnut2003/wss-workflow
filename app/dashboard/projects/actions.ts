@@ -126,13 +126,21 @@ export async function addProjectAction(
   const result = await validatePayload(formData);
   if (!result.ok) return { error: result.error };
 
+  // Managers can only ever assign themselves as the project manager — they
+  // don't get a picker, and the server is the authority here regardless of
+  // what the form submitted.
+  const assigneeIds =
+    session.user.role === "manager" && ObjectId.isValid(session.user.id)
+      ? [session.user.id]
+      : result.data.assigneeIds;
+
   try {
     await createProject({
       name: result.data.name,
       description: result.data.description,
       status: result.data.status,
       clientId: result.data.clientId || undefined,
-      assigneeIds: result.data.assigneeIds,
+      assigneeIds,
       startDate: result.data.startDate || undefined,
       dueDate: result.data.dueDate || undefined,
       createdBy: session.user.id,
