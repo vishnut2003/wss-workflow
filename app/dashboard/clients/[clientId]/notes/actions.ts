@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions/check";
-import { findClientById } from "@/lib/models/client";
+import { canUserAccessClient, findClientById } from "@/lib/models/client";
 import {
   createNote,
   deleteNote,
@@ -36,6 +36,11 @@ export async function addNoteAction(
   if (!clientId) return { error: "Missing client id." };
   const client = await findClientById(clientId);
   if (!client) return { error: "Client not found." };
+  if (
+    !(await canUserAccessClient(clientId, session.user.id, session.user.role))
+  ) {
+    return { error: "You can only add notes on assigned clients." };
+  }
 
   const body = readField(formData, "body");
   if (!body) return { error: "Note cannot be empty." };
@@ -73,6 +78,15 @@ export async function updateNoteAction(
   if (!noteId) return { error: "Missing note id." };
   const existing = await findNoteById(noteId);
   if (!existing) return { error: "Note not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId.toString(),
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only edit notes on assigned clients." };
+  }
 
   const body = readField(formData, "body");
   if (!body) return { error: "Note cannot be empty." };
@@ -104,6 +118,15 @@ export async function deleteNoteAction(
   if (!noteId) return { error: "Missing note id." };
   const existing = await findNoteById(noteId);
   if (!existing) return { error: "Note not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId.toString(),
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only delete notes on assigned clients." };
+  }
 
   try {
     const ok = await deleteNote(noteId);
@@ -129,6 +152,15 @@ export async function togglePinNoteAction(
   if (!noteId) return { error: "Missing note id." };
   const existing = await findNoteById(noteId);
   if (!existing) return { error: "Note not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId.toString(),
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only pin notes on assigned clients." };
+  }
 
   try {
     const ok = await setNotePinned(noteId, !existing.pinned);

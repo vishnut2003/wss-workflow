@@ -4,7 +4,7 @@ import { FilterX, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { can, requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import {
   listInvoicesForClient,
   summarizeByCurrency,
@@ -30,7 +30,11 @@ export default async function InvoicesPage({
   const { clientId } = await params;
   const sp = await searchParams;
   const filters = parseFilters(sp);
-  const client = await findClientListItemById(clientId);
+  const client = await findClientListItemForUser(
+    clientId,
+    session.user.id,
+    session.user.role
+  );
   if (!client) notFound();
 
   const [allInvoices, canManage] = await Promise.all([

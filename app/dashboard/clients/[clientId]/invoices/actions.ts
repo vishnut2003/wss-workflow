@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions/check";
-import { findClientById } from "@/lib/models/client";
+import { canUserAccessClient, findClientById } from "@/lib/models/client";
 import {
   computeTotals,
   createInvoice,
@@ -163,6 +163,11 @@ export async function createInvoiceAction(
   if (!clientId) return { error: "Missing client id." };
   const client = await findClientById(clientId);
   if (!client) return { error: "Client not found." };
+  if (
+    !(await canUserAccessClient(clientId, session.user.id, session.user.role))
+  ) {
+    return { error: "You can only create invoices for assigned clients." };
+  }
 
   const parsed = parsePayload(formData);
   if (!parsed.ok) return { error: parsed.error };
@@ -225,6 +230,15 @@ export async function updateInvoiceAction(
   if (!invoiceId) return { error: "Missing invoice id." };
   const existing = await findInvoiceById(invoiceId);
   if (!existing) return { error: "Invoice not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId,
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only update invoices on assigned clients." };
+  }
 
   const parsed = parsePayload(formData);
   if (!parsed.ok) return { error: parsed.error };
@@ -264,6 +278,15 @@ export async function setInvoiceStatusAction(
 
   const existing = await findInvoiceById(invoiceId);
   if (!existing) return { error: "Invoice not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId,
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only change invoices on assigned clients." };
+  }
 
   try {
     let ok: boolean;
@@ -316,6 +339,15 @@ export async function recordInvoicePaymentAction(
 
   const existing = await findInvoiceById(invoiceId);
   if (!existing) return { error: "Invoice not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId,
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only record payments on assigned clients." };
+  }
   if (existing.status === "cancelled") {
     return { error: "Can't record payments on a cancelled invoice." };
   }
@@ -358,6 +390,15 @@ export async function deleteInvoiceAction(
   if (!invoiceId) return { error: "Missing invoice id." };
   const existing = await findInvoiceById(invoiceId);
   if (!existing) return { error: "Invoice not found." };
+  if (
+    !(await canUserAccessClient(
+      existing.clientId,
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only delete invoices on assigned clients." };
+  }
 
   try {
     const ok = await deleteInvoice(invoiceId);

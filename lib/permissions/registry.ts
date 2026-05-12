@@ -77,7 +77,7 @@ export const CAPABILITIES: Capability[] = [
     label: "Clients page",
     description: "Browse and open client records.",
     category: "pages",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
   },
   {
     id: "pages.members",
@@ -105,44 +105,58 @@ export const CAPABILITIES: Capability[] = [
   {
     id: "clients.create",
     label: "Create client",
-    description: "Add a brand-new client record.",
+    description:
+      "Add a brand-new client record. Members are auto-assigned to clients they create.",
     category: "clients",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
   },
   {
     id: "clients.edit",
     label: "Edit client",
-    description: "Update an existing client's details.",
+    description:
+      "Update an existing client's details. Members can only edit clients they are assigned to.",
     category: "clients",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
+  },
+  {
+    id: "clients.assign",
+    label: "Assign members to a client",
+    description:
+      "Choose which member-role teammates can see and work on a client.",
+    category: "clients",
+    defaults: { admin: true, manager: true },
   },
   {
     id: "clients.contacts.manage",
     label: "Manage client contacts",
-    description: "Add, edit, or remove the people listed under a client.",
+    description:
+      "Add, edit, or remove the people listed under a client. Members are limited to their assigned clients.",
     category: "clients",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
   },
   {
     id: "clients.notes.manage",
     label: "Manage client notes",
-    description: "Add, edit, pin, or delete notes on a client.",
+    description:
+      "Add, edit, pin, or delete notes on a client. Members are limited to their assigned clients.",
     category: "clients",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
   },
   {
     id: "clients.invoices.view",
     label: "View client invoices",
-    description: "See the invoices list and individual invoices on a client.",
+    description:
+      "See the invoices list and individual invoices on a client. Members are limited to their assigned clients.",
     category: "clients",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
   },
   {
     id: "clients.invoices.manage",
     label: "Manage client invoices",
-    description: "Create, edit, and change the status of invoices.",
+    description:
+      "Create, edit, and change the status of invoices. Members are limited to their assigned clients.",
     category: "clients",
-    defaults: { admin: true },
+    defaults: { admin: true, manager: true, member: true },
   },
   {
     id: "clients.invoices.delete",

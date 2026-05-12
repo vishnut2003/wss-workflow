@@ -1,12 +1,18 @@
 import { can, requireCan } from "@/lib/permissions/check";
-import { listClients } from "@/lib/models/client";
+import { listClientsForUser } from "@/lib/models/client";
+import { listAssignableMembers } from "@/lib/models/user";
 import { AddClientDialog } from "./_components/add-client-dialog";
 import { ClientsList } from "./_components/clients-list";
 
 export default async function ClientsPage() {
   const session = await requireCan("pages.clients");
-  const clients = await listClients();
-  const canManage = await can(session.user.role, "clients.create");
+  const role = session.user.role;
+  const [clients, canManage, canAssign] = await Promise.all([
+    listClientsForUser(session.user.id, role),
+    can(role, "clients.create"),
+    can(role, "clients.assign"),
+  ]);
+  const assignableMembers = canAssign ? await listAssignableMembers() : [];
 
   return (
     <div className="flex flex-col gap-6">
@@ -19,10 +25,20 @@ export default async function ClientsPage() {
             Manage the companies and people you work with.
           </p>
         </div>
-        {canManage ? <AddClientDialog /> : null}
+        {canManage ? (
+          <AddClientDialog
+            canAssign={canAssign}
+            assignableMembers={assignableMembers}
+          />
+        ) : null}
       </div>
 
-      <ClientsList clients={clients} canManage={canManage} />
+      <ClientsList
+        clients={clients}
+        canManage={canManage}
+        canAssign={canAssign}
+        assignableMembers={assignableMembers}
+      />
     </div>
   );
 }

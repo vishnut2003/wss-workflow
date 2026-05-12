@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 
-import { requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { can, requireCan } from "@/lib/permissions/check";
+import {
+  findClientListItemForUser,
+  listClientsForUser,
+} from "@/lib/models/client";
 import { listProjectsForClient } from "@/lib/models/project";
-import { listClients } from "@/lib/models/client";
 import { listManagers } from "@/lib/models/user";
 
 import { AddProjectDialog } from "@/app/dashboard/projects/_components/add-project-dialog";
@@ -14,15 +16,22 @@ export default async function ClientProjectsPage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  await requireCan("pages.clients");
+  const session = await requireCan("pages.clients");
   const { clientId } = await params;
-  const client = await findClientListItemById(clientId);
+  const client = await findClientListItemForUser(
+    clientId,
+    session.user.id,
+    session.user.role
+  );
   if (!client) notFound();
 
+  const canCreateProject = await can(session.user.role, "projects.create");
   const [projects, clients, managers] = await Promise.all([
     listProjectsForClient(clientId),
-    listClients(),
-    listManagers(),
+    canCreateProject
+      ? listClientsForUser(session.user.id, session.user.role)
+      : Promise.resolve([]),
+    canCreateProject ? listManagers() : Promise.resolve([]),
   ]);
 
   const clientLabel = client.company || client.name || "this client";
@@ -38,17 +47,19 @@ export default async function ClientProjectsPage({
             Projects for {clientLabel}.
           </p>
         </div>
-        <AddProjectDialog
-          clients={clients}
-          managers={managers}
-          initialClientId={clientId}
-          triggerLabel="New project"
-        />
+        {canCreateProject ? (
+          <AddProjectDialog
+            clients={clients}
+            managers={managers}
+            initialClientId={clientId}
+            triggerLabel="New project"
+          />
+        ) : null}
       </div>
 
       <ProjectsGrid
         projects={projects}
-        canManage
+        canManage={canCreateProject}
         scope="all"
         title={`Projects · ${clientLabel}`}
         emptyTitle={`No projects for ${clientLabel} yet`}

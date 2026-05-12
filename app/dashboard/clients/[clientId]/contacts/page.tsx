@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { listContactsForClient } from "@/lib/models/client-contact";
 
 import { AddContactDialog } from "./_components/add-contact-dialog";
@@ -12,9 +12,13 @@ export default async function ClientContactsPage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  await requireCan("pages.clients");
+  const session = await requireCan("pages.clients");
   const { clientId } = await params;
-  const client = await findClientListItemById(clientId);
+  const client = await findClientListItemForUser(
+    clientId,
+    session.user.id,
+    session.user.role
+  );
   if (!client) notFound();
 
   const contacts = await listContactsForClient(clientId);

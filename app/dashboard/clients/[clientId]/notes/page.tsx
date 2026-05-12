@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { listNotesForClient } from "@/lib/models/client-note";
 
 import { NoteComposer } from "./_components/note-composer";
@@ -14,7 +14,11 @@ export default async function ClientNotesPage({
 }) {
   const session = await requireCan("pages.clients");
   const { clientId } = await params;
-  const client = await findClientListItemById(clientId);
+  const client = await findClientListItemForUser(
+    clientId,
+    session.user.id,
+    session.user.role
+  );
   if (!client) notFound();
 
   const notes = await listNotesForClient(clientId);

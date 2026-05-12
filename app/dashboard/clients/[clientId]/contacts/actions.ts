@@ -10,7 +10,11 @@ import {
   setPrimaryContact,
   updateContact,
 } from "@/lib/models/client-contact";
-import { findClientById, updateClient } from "@/lib/models/client";
+import {
+  canUserAccessClient,
+  findClientById,
+  updateClient,
+} from "@/lib/models/client";
 import { isCountryCode } from "@/lib/clients/countries";
 import { isClientStatus } from "@/lib/clients/types";
 
@@ -126,6 +130,11 @@ export async function addContactAction(
   if (!clientId) return { error: "Missing client id." };
   const client = await findClientById(clientId);
   if (!client) return { error: "Client not found." };
+  if (
+    !(await canUserAccessClient(clientId, session.user.id, session.user.role))
+  ) {
+    return { error: "You can only manage contacts on assigned clients." };
+  }
 
   const result = validatePayload(formData);
   if (!result.ok) return { error: result.error };
@@ -160,10 +169,15 @@ export async function updateContactAction(
   const existing = await findContactById(contactId);
   if (!existing) return { error: "Contact not found." };
 
+  const clientId = existing.clientId.toString();
+  if (
+    !(await canUserAccessClient(clientId, session.user.id, session.user.role))
+  ) {
+    return { error: "You can only manage contacts on assigned clients." };
+  }
+
   const result = validatePayload(formData);
   if (!result.ok) return { error: result.error };
-
-  const clientId = existing.clientId.toString();
 
   try {
     const ok = await updateContact(contactId, result.data);
@@ -195,6 +209,11 @@ export async function deleteContactAction(
   const existing = await findContactById(contactId);
   if (!existing) return { error: "Contact not found." };
   const clientId = existing.clientId.toString();
+  if (
+    !(await canUserAccessClient(clientId, session.user.id, session.user.role))
+  ) {
+    return { error: "You can only manage contacts on assigned clients." };
+  }
 
   try {
     const ok = await deleteContact(contactId);
@@ -218,6 +237,19 @@ export async function setPrimaryContactAction(
 
   const contactId = readField(formData, "contactId");
   if (!contactId) return { error: "Missing contact id." };
+
+  const existing = await findContactById(contactId);
+  if (!existing) return { error: "Contact not found." };
+  const clientIdPre = existing.clientId.toString();
+  if (
+    !(await canUserAccessClient(
+      clientIdPre,
+      session.user.id,
+      session.user.role
+    ))
+  ) {
+    return { error: "You can only manage contacts on assigned clients." };
+  }
 
   let updated;
   try {

@@ -8,6 +8,12 @@ export function isClientStatus(value: unknown): value is ClientStatus {
   );
 }
 
+export type ClientAssignee = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export type ClientListItem = {
   id: string;
   name: string;
@@ -22,6 +28,8 @@ export type ClientListItem = {
   city: string;
   country: string;
   notes: string;
+  assignedMemberIds: string[];
+  assignedMembers: ClientAssignee[];
   createdAt: string;
   updatedAt: string;
 };

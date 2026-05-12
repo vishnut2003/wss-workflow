@@ -17,6 +17,7 @@ import {
   Phone,
   Search,
   Users,
+  UserPlus,
   X,
 } from "lucide-react";
 
@@ -47,8 +48,10 @@ import {
   type ClientStatus,
 } from "@/lib/clients/types";
 import { findCountry } from "@/lib/clients/countries";
+import type { MemberListItem } from "@/lib/models/user";
 
 import { EditClientDialog } from "./edit-client-dialog";
+import { AssignMembersDialog } from "./assign-members-dialog";
 
 type StatusFilter = "all" | ClientStatus;
 
@@ -143,9 +146,13 @@ function normalizeUrl(value: string): string {
 export function ClientsList({
   clients,
   canManage,
+  canAssign = false,
+  assignableMembers = [],
 }: {
   clients: ClientListItem[];
   canManage: boolean;
+  canAssign?: boolean;
+  assignableMembers?: MemberListItem[];
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -153,7 +160,7 @@ export function ClientsList({
   const [page, setPage] = useState(1);
 
   const [actionTarget, setActionTarget] = useState<ClientListItem | null>(null);
-  const [dialog, setDialog] = useState<"none" | "edit">("none");
+  const [dialog, setDialog] = useState<"none" | "edit" | "assign">("none");
 
   const totalCounts = useMemo(() => countByStatus(clients), [clients]);
 
@@ -191,6 +198,10 @@ export function ClientsList({
   const openEdit = (c: ClientListItem) => {
     setActionTarget(c);
     setDialog("edit");
+  };
+  const openAssign = (c: ClientListItem) => {
+    setActionTarget(c);
+    setDialog("assign");
   };
   const openView = (c: ClientListItem) => {
     router.push(`/dashboard/clients/${c.id}`);
@@ -489,6 +500,12 @@ export function ClientsList({
                                 Edit client
                               </DropdownMenuItem>
                             ) : null}
+                            {canAssign ? (
+                              <DropdownMenuItem onClick={() => openAssign(c)}>
+                                <UserPlus className="size-4" />
+                                Assign members
+                              </DropdownMenuItem>
+                            ) : null}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -549,6 +566,14 @@ export function ClientsList({
         open={dialog === "edit"}
         onOpenChange={closeDialog}
         client={dialog === "edit" ? actionTarget : null}
+        canAssign={canAssign}
+        assignableMembers={assignableMembers}
+      />
+      <AssignMembersDialog
+        open={dialog === "assign"}
+        onOpenChange={closeDialog}
+        client={dialog === "assign" ? actionTarget : null}
+        assignableMembers={assignableMembers}
       />
     </>
   );

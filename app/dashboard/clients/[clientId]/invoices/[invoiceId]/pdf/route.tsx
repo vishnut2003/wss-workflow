@@ -3,7 +3,7 @@ import { renderToBuffer } from "@react-pdf/renderer";
 
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { findInvoiceById } from "@/lib/models/invoice";
 
 import { InvoicePdfDocument } from "../../_components/invoice-pdf-document";
@@ -27,7 +27,7 @@ export async function GET(
 
   const [invoice, client] = await Promise.all([
     findInvoiceById(invoiceId),
-    findClientListItemById(clientId),
+    findClientListItemForUser(clientId, session.user.id, session.user.role),
   ]);
   if (!invoice || !client || invoice.clientId !== clientId) {
     return new NextResponse("Not found", { status: 404 });

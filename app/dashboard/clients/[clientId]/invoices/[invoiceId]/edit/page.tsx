@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { findInvoiceById } from "@/lib/models/invoice";
 
 import { InvoiceForm } from "../../_components/invoice-form";
@@ -21,11 +21,11 @@ export default async function EditInvoicePage({
 }: {
   params: Promise<{ clientId: string; invoiceId: string }>;
 }) {
-  await requireCan("clients.invoices.manage");
+  const session = await requireCan("clients.invoices.manage");
   const { clientId, invoiceId } = await params;
   const [invoice, client] = await Promise.all([
     findInvoiceById(invoiceId),
-    findClientListItemById(clientId),
+    findClientListItemForUser(clientId, session.user.id, session.user.role),
   ]);
   if (!invoice || !client || invoice.clientId !== clientId) notFound();
 

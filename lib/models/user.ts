@@ -211,6 +211,20 @@ export async function listMembersForManager(
   return docs.map((d) => toMemberListItem(d, managerNameById));
 }
 
+export async function listAssignableMembers(): Promise<MemberListItem[]> {
+  const col = await usersCollection();
+  const docs = await col
+    .find(
+      { role: "member" },
+      { projection: { password: 0 } }
+    )
+    .sort({ name: 1 })
+    .toArray();
+
+  const managerNameById = await buildManagerNameMap(col, docs);
+  return docs.map((d) => toMemberListItem(d, managerNameById));
+}
+
 export async function listManagers(): Promise<MemberListItem[]> {
   const col = await usersCollection();
   const managerRoles: Role[] = ["manager", "admin"];

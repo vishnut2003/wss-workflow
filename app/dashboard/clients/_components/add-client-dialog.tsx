@@ -15,6 +15,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+import type { MemberListItem } from "@/lib/models/user";
+
 import { addClientAction, type ClientFormState } from "../actions";
 import {
   ClientFormFields,
@@ -22,7 +24,13 @@ import {
   type ClientFormValues,
 } from "./client-form-fields";
 
-export function AddClientDialog() {
+export function AddClientDialog({
+  canAssign = false,
+  assignableMembers = [],
+}: {
+  canAssign?: boolean;
+  assignableMembers?: MemberListItem[];
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -43,13 +51,27 @@ export function AddClientDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        {open ? <AddClientForm onSuccess={() => setOpen(false)} /> : null}
+        {open ? (
+          <AddClientForm
+            onSuccess={() => setOpen(false)}
+            canAssign={canAssign}
+            assignableMembers={assignableMembers}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );
 }
 
-function AddClientForm({ onSuccess }: { onSuccess: () => void }) {
+function AddClientForm({
+  onSuccess,
+  canAssign,
+  assignableMembers,
+}: {
+  onSuccess: () => void;
+  canAssign: boolean;
+  assignableMembers: MemberListItem[];
+}) {
   const [values, setValues] = useState<ClientFormValues>(EMPTY_CLIENT_VALUES);
   const [state, action, pending] = useActionState<ClientFormState | undefined, FormData>(
     addClientAction,
@@ -71,6 +93,8 @@ function AddClientForm({ onSuccess }: { onSuccess: () => void }) {
         onChange={update}
         disabled={pending}
         idPrefix="add-client"
+        canAssign={canAssign}
+        assignableMembers={assignableMembers}
       />
 
       {state?.error ? (

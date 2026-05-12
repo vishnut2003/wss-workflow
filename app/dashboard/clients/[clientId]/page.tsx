@@ -25,7 +25,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { listProjectsForClient } from "@/lib/models/project";
 import { listContactsForClient } from "@/lib/models/client-contact";
 import { listNotesForClient } from "@/lib/models/client-note";
@@ -146,9 +146,13 @@ export default async function ClientDetailPage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  await requireCan("pages.clients");
+  const session = await requireCan("pages.clients");
   const { clientId } = await params;
-  const client = await findClientListItemById(clientId);
+  const client = await findClientListItemForUser(
+    clientId,
+    session.user.id,
+    session.user.role
+  );
   if (!client) notFound();
 
   const [projects, contacts, notes] = await Promise.all([

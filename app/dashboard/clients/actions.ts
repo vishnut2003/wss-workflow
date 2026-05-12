@@ -1,11 +1,14 @@
 "use server";
 
+import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { can } from "@/lib/permissions/check";
 import {
+  canUserAccessClient,
   createClient,
   findClientById,
+  setClientAssignments,
   updateClient,
 } from "@/lib/models/client";
 import { isClientStatus, type ClientStatus } from "@/lib/clients/types";
@@ -24,6 +27,20 @@ const URL_RE = /^(https?:\/\/)?[\w-]+(\.[\w-]+)+([/?#].*)?$/i;
 
 function readField(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
+}
+
+function readAssignedMemberIds(formData: FormData): string[] {
+  const raw = formData.getAll("assignedMemberIds");
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of raw) {
+    if (typeof value !== "string") continue;
+    const hex = value.trim();
+    if (!hex || !ObjectId.isValid(hex) || seen.has(hex)) continue;
+    seen.add(hex);
+    out.push(hex);
+  }
+  return out;
 }
 
 function validatePayload(formData: FormData):
@@ -104,8 +121,25 @@ export async function addClientAction(
   const result = validatePayload(formData);
   if (!result.ok) return { error: result.error };
 
+  const canAssign = await can(session.user.role, "clients.assign");
+  const submittedAssignments = canAssign
+    ? readAssignedMemberIds(formData)
+    : [];
+
+  // Auto-assign member creators so they can see what they just created.
+  const isMember = session.user.role === "member";
+  const finalAssignments =
+    isMember && ObjectId.isValid(session.user.id)
+      ? Array.from(new Set([session.user.id, ...submittedAssignments]))
+      : submittedAssignments;
+
   try {
-    await createClient({ ...result.data, createdBy: session.user.id });
+    await createClient({
+      ...result.data,
+      assignedMemberIds:
+        canAssign || isMember ? finalAssignments : undefined,
+      createdBy: session.user.id,
+    });
   } catch {
     return { error: "Could not create the client. Please try again." };
   }
@@ -129,16 +163,64 @@ export async function updateClientAction(
   const target = await findClientById(clientId);
   if (!target) return { error: "Client not found." };
 
+  if (
+    !(await canUserAccessClient(clientId, session.user.id, session.user.role))
+  ) {
+    return { error: "You can only edit clients assigned to you." };
+  }
+
   const result = validatePayload(formData);
   if (!result.ok) return { error: result.error };
 
+  const canAssign = await can(session.user.role, "clients.assign");
+
   try {
-    const ok = await updateClient(clientId, result.data);
+    const ok = await updateClient(
+      clientId,
+      {
+        ...result.data,
+        assignedMemberIds: canAssign
+          ? readAssignedMemberIds(formData)
+          : undefined,
+      },
+      { updateAssignments: canAssign }
+    );
     if (!ok) return { error: "Client could not be updated." };
   } catch {
     return { error: "Could not update the client. Please try again." };
   }
 
   revalidatePath("/dashboard/clients");
+  revalidatePath(`/dashboard/clients/${clientId}`);
+  return { ok: true };
+}
+
+export async function assignClientMembersAction(
+  _prev: ClientFormState | undefined,
+  formData: FormData
+): Promise<ClientFormState> {
+  const session = await auth();
+  if (!session?.user || !(await can(session.user.role, "clients.assign"))) {
+    return { error: "You do not have permission to assign members." };
+  }
+
+  const clientId = readField(formData, "clientId");
+  if (!clientId) return { error: "Missing client id." };
+
+  const target = await findClientById(clientId);
+  if (!target) return { error: "Client not found." };
+
+  try {
+    const ok = await setClientAssignments(
+      clientId,
+      readAssignedMemberIds(formData)
+    );
+    if (!ok) return { error: "Assignments could not be saved." };
+  } catch {
+    return { error: "Could not save assignments. Please try again." };
+  }
+
+  revalidatePath("/dashboard/clients");
+  revalidatePath(`/dashboard/clients/${clientId}`);
   return { ok: true };
 }

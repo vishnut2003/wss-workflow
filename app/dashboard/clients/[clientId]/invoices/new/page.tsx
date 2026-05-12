@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { nextInvoiceNumber } from "@/lib/models/invoice";
 
 import { InvoiceForm } from "../_components/invoice-form";
@@ -14,9 +14,13 @@ export default async function NewInvoicePage({
 }: {
   params: Promise<{ clientId: string }>;
 }) {
-  await requireCan("clients.invoices.manage");
+  const session = await requireCan("clients.invoices.manage");
   const { clientId } = await params;
-  const client = await findClientListItemById(clientId);
+  const client = await findClientListItemForUser(
+    clientId,
+    session.user.id,
+    session.user.role
+  );
   if (!client) notFound();
 
   const year = new Date().getFullYear();

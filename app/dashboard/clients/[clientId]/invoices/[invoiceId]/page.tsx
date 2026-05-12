@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 import { can, requireCan } from "@/lib/permissions/check";
-import { findClientListItemById } from "@/lib/models/client";
+import { findClientListItemForUser } from "@/lib/models/client";
 import { findInvoiceById } from "@/lib/models/invoice";
 import {
   findCurrency,
@@ -95,7 +95,7 @@ export default async function InvoiceDetailPage({
   const { clientId, invoiceId } = await params;
   const [invoice, client, canManage, canDelete] = await Promise.all([
     findInvoiceById(invoiceId),
-    findClientListItemById(clientId),
+    findClientListItemForUser(clientId, session.user.id, session.user.role),
     can(session.user.role, "clients.invoices.manage"),
     can(session.user.role, "clients.invoices.delete"),
   ]);

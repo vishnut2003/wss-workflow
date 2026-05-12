@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ClientListItem } from "@/lib/clients/types";
+import type { MemberListItem } from "@/lib/models/user";
 
 import { updateClientAction, type ClientFormState } from "../actions";
 import {
@@ -35,6 +36,7 @@ function clientToValues(client: ClientListItem): ClientFormValues {
     city: client.city,
     country: client.country,
     notes: client.notes,
+    assignedMemberIds: client.assignedMemberIds ?? [],
   };
 }
 
@@ -42,10 +44,14 @@ export function EditClientDialog({
   open,
   onOpenChange,
   client,
+  canAssign = false,
+  assignableMembers = [],
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   client: ClientListItem | null;
+  canAssign?: boolean;
+  assignableMembers?: MemberListItem[];
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -62,7 +68,12 @@ export function EditClientDialog({
         </DialogHeader>
 
         {open && client ? (
-          <EditClientForm client={client} onSuccess={() => onOpenChange(false)} />
+          <EditClientForm
+            client={client}
+            onSuccess={() => onOpenChange(false)}
+            canAssign={canAssign}
+            assignableMembers={assignableMembers}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
@@ -72,9 +83,13 @@ export function EditClientDialog({
 function EditClientForm({
   client,
   onSuccess,
+  canAssign,
+  assignableMembers,
 }: {
   client: ClientListItem;
   onSuccess: () => void;
+  canAssign: boolean;
+  assignableMembers: MemberListItem[];
 }) {
   const [values, setValues] = useState<ClientFormValues>(() => clientToValues(client));
   const [state, action, pending] = useActionState<ClientFormState | undefined, FormData>(
@@ -99,6 +114,8 @@ function EditClientForm({
         onChange={update}
         disabled={pending}
         idPrefix="edit-client"
+        canAssign={canAssign}
+        assignableMembers={assignableMembers}
       />
 
       {state?.error ? (
