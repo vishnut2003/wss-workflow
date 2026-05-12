@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Bell, LogOut, Settings, UserCog } from "lucide-react";
+import { Search, LogOut, Settings, UserCog } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -55,15 +54,6 @@ export function DashboardHeader({ user, logoutAction }: Props) {
 
       <div className="flex flex-1 items-center justify-end gap-1.5 sm:flex-none">
         <ThemeToggle />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Notifications"
-          className="relative"
-        >
-          <Bell />
-          <span className="absolute top-1 right-1 size-1.5 rounded-full bg-theme-1 ring-2 ring-background" />
-        </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger
