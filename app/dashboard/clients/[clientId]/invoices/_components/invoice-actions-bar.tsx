@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
+  FileText,
   Loader2,
   Pencil,
   Send,
@@ -134,6 +135,23 @@ export function InvoiceActionsBar({
               );
             })
           : null}
+
+        <Button
+          size="sm"
+          variant="outline"
+          nativeButton={false}
+          className="gap-1.5"
+          render={
+            <a
+              href={`/dashboard/clients/${invoice.clientId}/invoices/${invoice.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+            />
+          }
+        >
+          <FileText className="size-3.5" />
+          View PDF
+        </Button>
 
         {canManage ? (
           <Button
